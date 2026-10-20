@@ -35,13 +35,15 @@ import java.util.UUID;
  * - Si el correo ya existe, se vincula la identidad de Google a esa cuenta y se inicia sesión.
  * - Si el correo es nuevo, se crea la empresa (tenant) + usuario ADMIN y queda con sesión iniciada.
  *
- * Validación contextual: el correo debe venir verificado por Google (o ser el dueño de la
- * cuenta), y el nombre de empresa, si se envía, no puede estar ya en uso.
+ * Validación contextual: el correo debe venir verificado por Google y, si se envía
+ * un nombre de empresa, este no puede estar ya en uso. Cuando no se envía nombre,
+ * se genera uno por defecto único para no chocar con otros usuarios de Google.
  */
 @Service
 public class GoogleAuthUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(GoogleAuthUseCase.class);
+    private static final int MAX_SLUG_ATTEMPTS = 5;
 
     private final GoogleTokenVerifier googleTokenVerifier;
     private final ExternalIdentityRepository externalIdentityRepository;
@@ -99,16 +101,10 @@ public class GoogleAuthUseCase {
         // 3) Cuenta nueva -> registro abierto con Google
         requireVerifiedEmail(account);
 
-        String companyName = StringUtils.hasText(request.companyName())
-                ? request.companyName().trim()
-                : "Empresa de " + account.fullName();
-        String slug = Tenant.slugify(companyName);
-        if (tenantRepository.existsBySlug(slug)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Ya existe una empresa con ese nombre; indique otro nombre o inicie sesión en la existente");
-        }
+        CompanyIdentity company = resolveCompany(request.companyName(), account.fullName());
 
-        Tenant tenant = tenantRepository.save(new Tenant(UUID.randomUUID(), companyName, slug, now));
+        Tenant tenant = tenantRepository.save(
+                new Tenant(UUID.randomUUID(), company.name(), company.slug(), now));
 
         // Contraseña aleatoria: la cuenta se gestiona con Google y no tiene credenciales propias.
         // Con HU-13 puede fijar una contraseña propia si algún día quiere entrar sin Google.
@@ -124,11 +120,53 @@ public class GoogleAuthUseCase {
         return session(user, true);
     }
 
+    /**
+     * Resuelve el nombre y el slug de la empresa.
+     * - Si el usuario propuso un nombre, se respeta y un duplicado sigue siendo 409.
+     * - Si falta (alta con Google), se genera "Empresa de {nombre}" y, si el slug
+     *   ya existe, se agrega un sufijo corto aleatorio hasta encontrar uno libre.
+     */
+    private CompanyIdentity resolveCompany(String requestedName, String fullName) {
+        if (StringUtils.hasText(requestedName)) {
+            String name = requestedName.trim();
+            String slug = Tenant.slugify(name);
+            if (tenantRepository.existsBySlug(slug)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Ya existe una empresa con ese nombre; indique otro nombre o inicie sesión en la existente");
+            }
+            return new CompanyIdentity(name, slug);
+        }
+
+        String baseName = "Empresa de " + fullName;
+        String baseSlug = Tenant.slugify(baseName);
+        if (!StringUtils.hasText(baseSlug)) {
+            baseSlug = "empresa";
+        }
+        if (!tenantRepository.existsBySlug(baseSlug)) {
+            return new CompanyIdentity(baseName, baseSlug);
+        }
+
+        for (int attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
+            String suffix = randomSuffix();
+            String candidateSlug = baseSlug + "-" + suffix;
+            if (!tenantRepository.existsBySlug(candidateSlug)) {
+                return new CompanyIdentity(baseName + " " + suffix, candidateSlug);
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "No se pudo generar un nombre de empresa único; indique un nombre");
+    }
+
+    private String randomSuffix() {
+        return String.format("%04x", random.nextInt(0x10000));
+    }
+
+    private record CompanyIdentity(String name, String slug) { }
+
     private void requireVerifiedEmail(GoogleTokenVerifier.GoogleAccount account) {
-        // El correo del dueño de la cuenta de Google siempre es verificable aunque
-        // el flujo simplificado no devuelva "email_verified".
-        boolean ownerEmail = StringUtils.hasText(account.email()) && account.email().endsWith("@gmail.com");
-        if (!account.emailVerified() && !ownerEmail) {
+        // Solo se permite crear empresa con un correo que Google marque como verificado.
+        // No hay excepciones por dominio (p. ej. @gmail.com).
+        if (!account.emailVerified()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "El correo de Google debe estar verificado para crear una empresa");
         }

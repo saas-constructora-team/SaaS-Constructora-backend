@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -188,6 +189,25 @@ class LoginIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.newUser").value(false))
                 .andExpect(jsonPath("$.tenant.slug").value("constructora-google"));
+    }
+
+    @Test
+    void googleSinNombreDeEmpresaGeneraNombresUnicosParaUsuariosHomonimos() throws Exception {
+        // Primer usuario: no envía companyName -> nombre por defecto
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idToken\":\"id-token:google-sub-homo-1|homo1@correo.com|Juan Pérez\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tenant.name").value("Empresa de Juan Pérez"))
+                .andExpect(jsonPath("$.tenant.slug").value("empresa-de-juan-perez"));
+
+        // Segundo usuario con el mismo nombre: no debe chocar (409), se genera uno único
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idToken\":\"id-token:google-sub-homo-2|homo2@correo.com|Juan Pérez\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tenant.name", startsWith("Empresa de Juan Pérez ")))
+                .andExpect(jsonPath("$.tenant.slug", startsWith("empresa-de-juan-perez-")));
     }
 
     @Test

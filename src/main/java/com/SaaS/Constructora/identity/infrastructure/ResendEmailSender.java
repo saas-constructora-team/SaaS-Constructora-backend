@@ -8,14 +8,18 @@ import com.resend.services.emails.model.CreateEmailResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * Adaptador del puerto {@link EmailSender} que envía correos con Resend (HU-13).
  * Si no hay API key configurada (desarrollo local sin credenciales), registra
  * el enlace en el log en lugar de fallar, para no romper el flujo.
+ *
+ * Es el proveedor por defecto; se desactiva con {@code app.email.provider=smtp}.
  */
 @Component
+@ConditionalOnProperty(name = "app.email.provider", havingValue = "resend", matchIfMissing = true)
 class ResendEmailSender implements EmailSender {
 
     private static final Logger log = LoggerFactory.getLogger(ResendEmailSender.class);
@@ -36,7 +40,7 @@ class ResendEmailSender implements EmailSender {
             return;
         }
 
-        send(toEmail, "Recuperación de contraseña", buildHtml(recipientName, resetLink));
+        send(toEmail, "Recuperación de contraseña", EmailTemplates.passwordReset(recipientName, resetLink));
     }
 
     @Override
@@ -47,7 +51,7 @@ class ResendEmailSender implements EmailSender {
         }
 
         send(toEmail, "¡Bienvenido a Constructora!",
-                buildWelcomeHtml(recipientName, companyName));
+                EmailTemplates.welcome(recipientName, companyName));
     }
 
     private void send(String toEmail, String subject, String html) {
@@ -65,22 +69,5 @@ class ResendEmailSender implements EmailSender {
         } catch (ResendException e) {
             log.error("Fallo enviando correo \"{}\" a {}", subject, toEmail, e);
         }
-    }
-
-    private String buildWelcomeHtml(String recipientName, String companyName) {
-        return """
-                <p>Hola %s,</p>
-                <p>Tu empresa <strong>%s</strong> ya está creada en Constructora.</p>
-                <p>Puedes iniciar sesión en cualquier momento con tu cuenta de Google.</p>
-                """.formatted(recipientName, companyName);
-    }
-
-    private String buildHtml(String recipientName, String resetLink) {
-        return """
-                <p>Hola %s,</p>
-                <p>Recibimos una solicitud para restablecer tu contraseña.</p>
-                <p><a href="%s">Restablecer contraseña</a></p>
-                <p>Si no fuiste tú, ignora este correo. El enlace caduca en unos minutos.</p>
-                """.formatted(recipientName, resetLink);
     }
 }
