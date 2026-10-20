@@ -25,6 +25,7 @@
         <!-- Versiones que NO gestiona el BOM de Spring Boot -->
         <spring-modulith.version>2.1.1</spring-modulith.version>
         <springdoc.version>3.0.3</springdoc.version>
+        <resend.version>4.28.0</resend.version>
     </properties>
 
     <dependencyManagement>
@@ -98,10 +99,19 @@
 
         <!-- ============================================================
              CORREO: recuperación de contraseña (HU-13) y notificaciones (HU-12)
+             El starter-mail (SMTP) queda disponible, pero el envío real se hace
+             con Resend a través del puerto EmailSender del módulo identity.
              ============================================================ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- Resend: SDK oficial de Java para el envío de correos (HU-13) -->
+        <dependency>
+            <groupId>com.resend</groupId>
+            <artifactId>resend-java</artifactId>
+            <version>${resend.version}</version>
         </dependency>
 
         <!-- ============================================================

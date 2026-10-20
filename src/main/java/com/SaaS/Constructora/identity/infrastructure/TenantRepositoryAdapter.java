@@ -3,6 +3,8 @@ package com.SaaS.Constructora.identity.infrastructure;
 import com.SaaS.Constructora.identity.application.ports.TenantRepository;
 import com.SaaS.Constructora.identity.domain.Tenant;
 import org.springframework.stereotype.Repository;
+import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 class TenantRepositoryAdapter implements TenantRepository {
@@ -10,6 +12,11 @@ class TenantRepositoryAdapter implements TenantRepository {
     private final TenantJpaRepository repository;
 
     TenantRepositoryAdapter(TenantJpaRepository repository) { this.repository = repository; }
+
+    @Override
+    public Optional<Tenant> findById(UUID id) {
+        return repository.findById(id).map(TenantRepositoryAdapter::toDomain);
+    }
 
     @Override
     public boolean existsBySlug(String slug) {
