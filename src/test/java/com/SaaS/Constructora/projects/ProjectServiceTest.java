@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,5 +61,61 @@ class ProjectServiceTest {
         assertEquals(List.of(), response);
         verify(repository).findByTenantIdOrderByCreatedAtDesc(tenantId);
         verifyNoInteractions(tenantQueryService);
+    }
+
+    @Test
+    void actualizaElProyectoDelTenant() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Project project = new Project(tenantId, "Nombre viejo", "Cliente viejo", "Ciudad vieja");
+        when(repository.findByIdAndTenantId(projectId, tenantId)).thenReturn(Optional.of(project));
+
+        ProjectResponse response = service.update(tenantId, projectId,
+                new UpdateProjectRequest("Nombre nuevo", "Cliente nuevo", "Ciudad nueva"));
+
+        assertEquals(project.getId(), response.id());
+        assertEquals(tenantId, response.tenantId());
+        assertEquals("Nombre nuevo", response.name());
+        assertEquals("Cliente nuevo", response.clientName());
+        assertEquals("Ciudad nueva", response.location());
+        assertEquals(ProjectStatus.ACTIVE, response.status());
+    }
+
+    @Test
+    void noActualizaUnProyectoDeOtraEmpresa() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        when(repository.findByIdAndTenantId(projectId, tenantId)).thenReturn(Optional.empty());
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.update(tenantId, projectId,
+                        new UpdateProjectRequest("Nombre nuevo", null, null)));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+    }
+
+    @Test
+    void eliminaElProyectoDelTenant() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Project project = new Project(tenantId, "Proyecto", null, null);
+        when(repository.findByIdAndTenantId(projectId, tenantId)).thenReturn(Optional.of(project));
+
+        service.delete(tenantId, projectId);
+
+        verify(repository).delete(project);
+    }
+
+    @Test
+    void noEliminaUnProyectoDeOtraEmpresa() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        when(repository.findByIdAndTenantId(projectId, tenantId)).thenReturn(Optional.empty());
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.delete(tenantId, projectId));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verify(repository, never()).delete(any(Project.class));
     }
 }

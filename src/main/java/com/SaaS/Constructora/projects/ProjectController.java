@@ -31,4 +31,20 @@ class ProjectController {
         UUID tenantId = TenantClaims.requireTenantId(jwt);
         return service.list(tenantId);
     }
+
+    @PutMapping("/{id}")
+    ProjectResponse update(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateProjectRequest request) {
+        UUID tenantId = TenantClaims.requireTenantId(jwt);
+        return service.update(tenantId, id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void delete(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
+        UUID tenantId = TenantClaims.requireTenantId(jwt);
+        service.delete(tenantId, id);
+    }
 }

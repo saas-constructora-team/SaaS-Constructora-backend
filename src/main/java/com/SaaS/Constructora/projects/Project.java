@@ -47,6 +47,13 @@ public class Project {
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
 
+    /** Actualiza los datos editables del proyecto; el tenant y el estado no cambian. */
+    public void updateDetails(String name, String clientName, String location) {
+        this.name = name;
+        this.clientName = clientName;
+        this.location = location;
+    }
+
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
     public String getName() { return name; }

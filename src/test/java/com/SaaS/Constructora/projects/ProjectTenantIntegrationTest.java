@@ -16,8 +16,10 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -88,6 +90,81 @@ class ProjectTenantIntegrationTest {
     }
 
     @Test
+    void actualizaUnProyectoDelTenant() throws Exception {
+        String token = loginDemo();
+        String originalName = "Proyecto " + UUID.randomUUID();
+        String updatedName = originalName + " editado";
+        UUID projectId = createProject(token, originalName);
+
+        mockMvc.perform(put("/api/projects/{id}", projectId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(projectBody(updatedName)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(projectId.toString()))
+                .andExpect(jsonPath("$.tenantId").value(DEMO_TENANT.toString()))
+                .andExpect(jsonPath("$.name").value(updatedName));
+
+        mockMvc.perform(get("/api/projects")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].name", hasItem(updatedName)))
+                .andExpect(jsonPath("$[*].name", not(hasItem(originalName))));
+    }
+
+    @Test
+    void otraEmpresaNoPuedeEditarUnProyecto() throws Exception {
+        String demoToken = loginDemo();
+        String originalName = "Proyecto " + UUID.randomUUID();
+        UUID projectId = createProject(demoToken, originalName);
+        String otherToken = registerCompanyAndGetToken();
+
+        mockMvc.perform(put("/api/projects/{id}", projectId)
+                        .header("Authorization", "Bearer " + otherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(projectBody("Intento de edición ajena")))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/projects")
+                        .header("Authorization", "Bearer " + demoToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].name", hasItem(originalName)));
+    }
+
+    @Test
+    void eliminaUnProyectoDelTenant() throws Exception {
+        String token = loginDemo();
+        String name = "Proyecto a eliminar " + UUID.randomUUID();
+        UUID projectId = createProject(token, name);
+
+        mockMvc.perform(delete("/api/projects/{id}", projectId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/projects")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].name", not(hasItem(name))));
+    }
+
+    @Test
+    void otraEmpresaNoPuedeEliminarUnProyecto() throws Exception {
+        String demoToken = loginDemo();
+        String name = "Proyecto protegido " + UUID.randomUUID();
+        UUID projectId = createProject(demoToken, name);
+        String otherToken = registerCompanyAndGetToken();
+
+        mockMvc.perform(delete("/api/projects/{id}", projectId)
+                        .header("Authorization", "Bearer " + otherToken))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/projects")
+                        .header("Authorization", "Bearer " + demoToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].name", hasItem(name)));
+    }
+
+    @Test
     void sinTokenDevuelve401() throws Exception {
         mockMvc.perform(get("/api/projects"))
                 .andExpect(status().isUnauthorized());
@@ -127,12 +204,14 @@ class ProjectTenantIntegrationTest {
         return JsonPath.read(body, "$.accessToken");
     }
 
-    private void createProject(String token, String name) throws Exception {
-        mockMvc.perform(post("/api/projects")
+    private UUID createProject(String token, String name) throws Exception {
+        String body = mockMvc.perform(post("/api/projects")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(projectBody(name)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return UUID.fromString(JsonPath.read(body, "$.id"));
     }
 
     private static String projectBody(String name) {
