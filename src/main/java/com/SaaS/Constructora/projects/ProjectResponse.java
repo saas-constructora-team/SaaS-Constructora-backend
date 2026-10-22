@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record ProjectResponse(
     UUID id,
+    UUID tenantId,
     String name,
     String clientName,
     String location,
@@ -12,7 +13,7 @@ public record ProjectResponse(
     LocalDateTime createdAt
 ) {
     static ProjectResponse from(Project p) {
-        return new ProjectResponse(p.getId(), p.getName(), p.getClientName(),
+        return new ProjectResponse(p.getId(), p.getTenantId(), p.getName(), p.getClientName(),
                 p.getLocation(), p.getStatus(), p.getCreatedAt());
     }
 }
