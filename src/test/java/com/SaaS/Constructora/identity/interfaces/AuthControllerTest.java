@@ -1,8 +1,12 @@
 package com.SaaS.Constructora.identity.interfaces;
 
+import com.SaaS.Constructora.identity.application.GoogleAuthUseCase;
 import com.SaaS.Constructora.identity.application.LoginUseCase;
 import com.SaaS.Constructora.identity.application.RegisterTenantUseCase;
+import com.SaaS.Constructora.identity.application.RequestPasswordResetUseCase;
+import com.SaaS.Constructora.identity.application.ResetPasswordUseCase;
 import com.SaaS.Constructora.identity.domain.Role;
+import com.SaaS.Constructora.identity.interfaces.dto.GoogleAuthResponse;
 import com.SaaS.Constructora.identity.interfaces.dto.LoginResponse;
 import com.SaaS.Constructora.identity.interfaces.dto.RegisterTenantResponse;
 import org.junit.jupiter.api.Test;
@@ -17,6 +21,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -33,6 +38,15 @@ class AuthControllerTest {
 
     @MockitoBean
     private RegisterTenantUseCase registerTenantUseCase;
+
+    @MockitoBean
+    private GoogleAuthUseCase googleAuthUseCase;
+
+    @MockitoBean
+    private RequestPasswordResetUseCase requestPasswordResetUseCase;
+
+    @MockitoBean
+    private ResetPasswordUseCase resetPasswordUseCase;
 
     @Test
     void loginConCredenciasValidasDevuelve200YToken() throws Exception {
@@ -115,6 +129,111 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"companyName\":\"Otra\",\"adminFullName\":\"Admin\","
                                 + "\"adminEmail\":\"jefe@nueva.com\",\"adminPassword\":\"corta\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void googleLoginDeCuentaExistenteDevuelve200() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        GoogleAuthResponse response = new GoogleAuthResponse("jwt-token", "Bearer", 3600, false,
+                new GoogleAuthResponse.TenantResponse(tenantId, "Constructora Demo", "demo"),
+                new LoginResponse.UserResponse(userId, tenantId, "ana@gmail.com",
+                        "Ana Pérez", Role.ADMIN.name()));
+        when(googleAuthUseCase.authenticate(any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idToken\":\"token-google\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("jwt-token"))
+                .andExpect(jsonPath("$.newUser").value(false))
+                .andExpect(jsonPath("$.user.email").value("ana@gmail.com"))
+                .andExpect(jsonPath("$.tenant.slug").value("demo"));
+    }
+
+    @Test
+    void googleRegistroDeCuentaNuevaDevuelve201() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        GoogleAuthResponse response = new GoogleAuthResponse("jwt-token", "Bearer", 3600, true,
+                new GoogleAuthResponse.TenantResponse(tenantId, "Constructora Nueva", "constructora-nueva"),
+                new LoginResponse.UserResponse(userId, tenantId, "nueva@gmail.com",
+                        "Nueva Admin", Role.ADMIN.name()));
+        when(googleAuthUseCase.authenticate(any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idToken\":\"token-google\",\"companyName\":\"Constructora Nueva\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.newUser").value(true))
+                .andExpect(jsonPath("$.tenant.name").value("Constructora Nueva"))
+                .andExpect(jsonPath("$.user.role").value("ADMIN"));
+    }
+
+    @Test
+    void googleSinTokenDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idToken\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void googleConTokenInvalidoDevuelve401() throws Exception {
+        when(googleAuthUseCase.authenticate(any()))
+                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.UNAUTHORIZED, "Token de Google inválido o expirado"));
+
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idToken\":\"token-malo\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void forgotPasswordSiempreDevuelve200() throws Exception {
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"admin@demo.com\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", notNullValue()));
+    }
+
+    @Test
+    void forgotPasswordConEmailInvalidoDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"no-es-email\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void resetPasswordValidoDevuelve200() throws Exception {
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"token-valido\",\"newPassword\":\"NuevaClave123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", notNullValue()));
+    }
+
+    @Test
+    void resetPasswordConPasswordCortaDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"token-valido\",\"newPassword\":\"corta\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void resetPasswordConTokenInvalidoDevuelve400() throws Exception {
+        org.mockito.Mockito.doThrow(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST, "Token inválido o expirado"))
+                .when(resetPasswordUseCase).reset(any(), any());
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"malo\",\"newPassword\":\"NuevaClave123\"}"))
                 .andExpect(status().isBadRequest());
     }
 }

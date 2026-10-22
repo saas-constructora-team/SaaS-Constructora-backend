@@ -4,6 +4,7 @@ import com.SaaS.Constructora.identity.application.ports.UserRepository;
 import com.SaaS.Constructora.identity.domain.User;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 class UserRepositoryAdapter implements UserRepository {
@@ -18,6 +19,11 @@ class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
+    public Optional<User> findById(UUID id) {
+        return repository.findById(id).map(UserRepositoryAdapter::toDomain);
+    }
+
+    @Override
     public boolean existsByEmail(String email) {
         return repository.existsByEmail(email);
     }
@@ -28,6 +34,14 @@ class UserRepositoryAdapter implements UserRepository {
                 user.getId(), user.getTenantId(), user.getEmail(), user.getFullName(),
                 user.getPasswordHash(), user.getRole(), user.isActive(), user.getCreatedAt()));
         return toDomain(saved);
+    }
+
+    @Override
+    public void updatePasswordHash(UUID userId, String passwordHash) {
+        repository.findById(userId).ifPresent(e -> {
+            e.setPasswordHash(passwordHash);
+            repository.save(e);
+        });
     }
 
     private static User toDomain(UserJpaEntity e) {

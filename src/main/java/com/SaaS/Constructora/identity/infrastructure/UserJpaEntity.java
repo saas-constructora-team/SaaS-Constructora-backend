@@ -56,4 +56,6 @@ class UserJpaEntity {
     Role getRole() { return role; }
     boolean isActive() { return active; }
     LocalDateTime getCreatedAt() { return createdAt; }
+
+    void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 }
