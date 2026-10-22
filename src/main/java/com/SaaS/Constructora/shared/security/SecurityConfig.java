@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**", "/error", "/actuator/**",
                         "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/projects/**").authenticated()
+                .requestMatchers("/api/projects/**", "/api/users/**").authenticated()
                 .anyRequest().permitAll())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
         return http.build();

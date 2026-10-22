@@ -1,6 +1,7 @@
 package com.SaaS.Constructora.projects;
 
 import com.SaaS.Constructora.identity.application.TenantQueryService;
+import com.SaaS.Constructora.identity.domain.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,7 +24,10 @@ class ProjectServiceTest {
 
     private final ProjectRepository repository = mock(ProjectRepository.class);
     private final TenantQueryService tenantQueryService = mock(TenantQueryService.class);
-    private final ProjectService service = new ProjectService(repository, tenantQueryService);
+    private final ProjectAssignmentRepository assignmentRepository =
+            mock(ProjectAssignmentRepository.class);
+    private final ProjectService service =
+            new ProjectService(repository, tenantQueryService, assignmentRepository);
 
     @Test
     void creaElProyectoConElTenantRecibido() {
@@ -52,15 +56,49 @@ class ProjectServiceTest {
     }
 
     @Test
-    void listaUsandoElFiltroPorTenant() {
+    void adminListaTodosLosProyectosDelTenant() {
         UUID tenantId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         when(repository.findByTenantIdOrderByCreatedAtDesc(tenantId)).thenReturn(List.of());
 
-        List<ProjectResponse> response = service.list(tenantId);
+        List<ProjectResponse> response = service.list(tenantId, userId, Role.ADMIN);
 
         assertEquals(List.of(), response);
         verify(repository).findByTenantIdOrderByCreatedAtDesc(tenantId);
         verifyNoInteractions(tenantQueryService);
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void memberSoloListaSusProyectosAsignados() {
+        UUID tenantId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Project assigned = new Project(tenantId, "Proyecto asignado", null, null);
+        when(assignmentRepository.findProjectIdsByTenantIdAndUserId(tenantId, userId))
+                .thenReturn(List.of(projectId));
+        when(repository.findByTenantIdAndIdInOrderByCreatedAtDesc(tenantId, List.of(projectId)))
+                .thenReturn(List.of(assigned));
+
+        List<ProjectResponse> response = service.list(tenantId, userId, Role.MEMBER);
+
+        assertEquals(1, response.size());
+        assertEquals("Proyecto asignado", response.getFirst().name());
+        verify(repository, never()).findByTenantIdOrderByCreatedAtDesc(tenantId);
+    }
+
+    @Test
+    void memberSinAsignacionesNoConsultaProyectos() {
+        UUID tenantId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        when(assignmentRepository.findProjectIdsByTenantIdAndUserId(tenantId, userId))
+                .thenReturn(List.of());
+
+        List<ProjectResponse> response = service.list(tenantId, userId, Role.MEMBER);
+
+        assertEquals(List.of(), response);
+        verify(repository, never()).findByTenantIdOrderByCreatedAtDesc(tenantId);
+        verify(repository, never()).findByTenantIdAndIdInOrderByCreatedAtDesc(any(), any());
     }
 
     @Test

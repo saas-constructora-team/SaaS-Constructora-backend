@@ -32,6 +32,9 @@ public class JwtService {
     /** Claim donde viaja el tenant (empresa) autenticado. */
     public static final String TENANT_CLAIM = "tenant_id";
 
+    /** Claim donde viaja el rol del usuario autenticado. */
+    public static final String ROLE_CLAIM = "role";
+
     private final RSAKey signingKey;
     private final NimbusJwtEncoder encoder;
     private final long ttlSeconds;
@@ -57,7 +60,7 @@ public class JwtService {
                 .expiresAt(now.plusSeconds(ttlSeconds))
                 .claim(TENANT_CLAIM, user.getTenantId().toString())
                 .claim("email", user.getEmail())
-                .claim("role", user.getRole().name())
+                .claim(ROLE_CLAIM, user.getRole().name())
                 .build();
 
         JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256)

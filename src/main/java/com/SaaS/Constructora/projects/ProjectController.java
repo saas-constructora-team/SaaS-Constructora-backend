@@ -29,7 +29,9 @@ class ProjectController {
     @GetMapping
     List<ProjectResponse> list(@AuthenticationPrincipal Jwt jwt) {
         UUID tenantId = TenantClaims.requireTenantId(jwt);
-        return service.list(tenantId);
+        return service.list(tenantId,
+                TenantClaims.requireUserId(jwt),
+                TenantClaims.requireRole(jwt));
     }
 
     @PutMapping("/{id}")

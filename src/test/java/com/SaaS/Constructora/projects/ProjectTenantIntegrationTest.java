@@ -62,6 +62,70 @@ class ProjectTenantIntegrationTest {
     }
 
     @Test
+    void guardaElFormularioCompletoDeCaptacion() throws Exception {
+        String token = loginDemo();
+        String name = "Proyecto intake " + UUID.randomUUID();
+        String body = """
+                {
+                  "name": "%s",
+                  "clientName": "Constructora del Valle S.A.S.",
+                  "location": "Cali, Valle del Cauca",
+                  "contactEmail": "contacto@cliente.com",
+                  "contactPhone": "+57 300 123 4567",
+                  "projectType": "RESIDENTIAL",
+                  "propertyUse": "MIXED",
+                  "estimatedArea": 145.50,
+                  "occupantCount": 4,
+                  "requiredSpaces": "4 habitaciones, 3 baños, estacionamiento y estudio",
+                  "styleReferences": "Moderno y minimalista. https://pin.it/referencia",
+                  "budgetRange": "FROM_100M_TO_250M",
+                  "estimatedStartDate": "2027-01-15",
+                  "estimatedDeliveryDate": "2027-12-20",
+                  "lotOwnership": "OWNED",
+                  "hasDeeds": true,
+                  "hasTopographicSurvey": true,
+                  "hasPreviousPlans": false,
+                  "hasSitePhotos": true
+                }
+                """.formatted(name);
+
+        mockMvc.perform(post("/api/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.contactEmail").value("contacto@cliente.com"))
+                .andExpect(jsonPath("$.contactPhone").value("+57 300 123 4567"))
+                .andExpect(jsonPath("$.projectType").value("RESIDENTIAL"))
+                .andExpect(jsonPath("$.propertyUse").value("MIXED"))
+                .andExpect(jsonPath("$.estimatedArea").value(145.50))
+                .andExpect(jsonPath("$.occupantCount").value(4))
+                .andExpect(jsonPath("$.requiredSpaces").value("4 habitaciones, 3 baños, estacionamiento y estudio"))
+                .andExpect(jsonPath("$.budgetRange").value("FROM_100M_TO_250M"))
+                .andExpect(jsonPath("$.estimatedStartDate").value("2027-01-15"))
+                .andExpect(jsonPath("$.estimatedDeliveryDate").value("2027-12-20"))
+                .andExpect(jsonPath("$.lotOwnership").value("OWNED"))
+                .andExpect(jsonPath("$.hasDeeds").value(true))
+                .andExpect(jsonPath("$.hasTopographicSurvey").value(true))
+                .andExpect(jsonPath("$.hasPreviousPlans").value(false))
+                .andExpect(jsonPath("$.hasSitePhotos").value(true));
+    }
+
+    @Test
+    void rechazaCorreoDeContactoInvalido() throws Exception {
+        String token = loginDemo();
+        String body = """
+                {"name": "Proyecto %s", "contactEmail": "no-es-un-correo"}
+                """.formatted(UUID.randomUUID());
+
+        mockMvc.perform(post("/api/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void otraEmpresaNoVeLosProyectosDeLaPrimera() throws Exception {
         String demoToken = loginDemo();
         String demoProject = "Proyecto demo " + UUID.randomUUID();

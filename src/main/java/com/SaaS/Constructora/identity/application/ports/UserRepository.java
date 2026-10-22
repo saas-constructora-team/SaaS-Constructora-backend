@@ -1,11 +1,16 @@
 package com.SaaS.Constructora.identity.application.ports;
 
 import com.SaaS.Constructora.identity.domain.User;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /** Puerto (interfaz) que el caso de uso necesita; la implementación vive en infrastructure. */
 public interface UserRepository {
     Optional<User> findByEmail(String email);
+
+    /** Usuarios de una empresa, ordenados por nombre (listado para asignaciones). */
+    List<User> findByTenantIdOrderByFullNameAsc(UUID tenantId);
 
     /** Búsqueda por id (HU-01: login con Google). */
     Optional<User> findById(java.util.UUID id);
