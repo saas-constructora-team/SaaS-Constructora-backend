@@ -3,6 +3,7 @@ package com.SaaS.Constructora.identity.infrastructure;
 import com.SaaS.Constructora.identity.application.ports.UserRepository;
 import com.SaaS.Constructora.identity.domain.User;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,6 +22,14 @@ class UserRepositoryAdapter implements UserRepository {
     @Override
     public Optional<User> findById(UUID id) {
         return repository.findById(id).map(UserRepositoryAdapter::toDomain);
+    }
+
+    @Override
+    public List<User> findByTenantIdOrderByFullNameAsc(UUID tenantId) {
+        return repository.findByTenantIdOrderByFullNameAsc(tenantId)
+                .stream()
+                .map(UserRepositoryAdapter::toDomain)
+                .toList();
     }
 
     @Override

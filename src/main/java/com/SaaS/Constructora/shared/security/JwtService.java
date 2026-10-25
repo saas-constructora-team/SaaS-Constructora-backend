@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.stereotype.Service;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -24,6 +25,15 @@ import java.util.UUID;
  */
 @Service
 public class JwtService {
+
+    /** Emisor de los tokens; también se valida al consumirlos. */
+    public static final String ISSUER = "constructora-api";
+
+    /** Claim donde viaja el tenant (empresa) autenticado. */
+    public static final String TENANT_CLAIM = "tenant_id";
+
+    /** Claim donde viaja el rol del usuario autenticado. */
+    public static final String ROLE_CLAIM = "role";
 
     private final RSAKey signingKey;
     private final NimbusJwtEncoder encoder;
@@ -44,13 +54,13 @@ public class JwtService {
     public String generateToken(User user) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("constructora-api")
+                .issuer(ISSUER)
                 .subject(user.getId().toString())
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(ttlSeconds))
-                .claim("tenant_id", user.getTenantId().toString())
+                .claim(TENANT_CLAIM, user.getTenantId().toString())
                 .claim("email", user.getEmail())
-                .claim("role", user.getRole().name())
+                .claim(ROLE_CLAIM, user.getRole().name())
                 .build();
 
         JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256)
@@ -62,5 +72,14 @@ public class JwtService {
 
     public long getTokenTtlSeconds() {
         return ttlSeconds;
+    }
+
+    /** Clave pública usada por el resource server para validar las firmas. */
+    public RSAPublicKey getPublicKey() {
+        try {
+            return signingKey.toRSAPublicKey();
+        } catch (JOSEException e) {
+            throw new IllegalStateException("No se pudo obtener la clave pública para validar JWTs", e);
+        }
     }
 }
