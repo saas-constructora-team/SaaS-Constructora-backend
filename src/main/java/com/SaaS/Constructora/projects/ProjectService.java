@@ -15,12 +15,15 @@ public class ProjectService {
     private final ProjectRepository repository;
     private final TenantQueryService tenantQueryService;
     private final ProjectAssignmentRepository assignmentRepository;
+    private final ProjectStageRepository stageRepository;
 
     public ProjectService(ProjectRepository repository, TenantQueryService tenantQueryService,
-                          ProjectAssignmentRepository assignmentRepository) {
+                          ProjectAssignmentRepository assignmentRepository,
+                          ProjectStageRepository stageRepository) {
         this.repository = repository;
         this.tenantQueryService = tenantQueryService;
         this.assignmentRepository = assignmentRepository;
+        this.stageRepository = stageRepository;
     }
 
     @Transactional
@@ -29,6 +32,7 @@ public class ProjectService {
         tenantQueryService.ensureExists(tenantId);
         Project project = new Project(tenantId, req.toDetails());
         Project saved = repository.save(project);
+        stageRepository.saveAll(ProjectStage.initialStages(tenantId, saved.getId()));
         return ProjectResponse.from(saved);
     }
 
@@ -64,6 +68,24 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public void ensureBelongsToTenant(UUID projectId, UUID tenantId) {
         requireProjectOfTenant(tenantId, projectId);
+    }
+
+    /**
+     * Valida que el proyecto exista en el tenant y que el usuario pueda
+     * acceder a él. ADMIN accede a todos; MEMBER solo a los asignados.
+     * Un proyecto no asignado se reporta como inexistente (404) para no
+     * revelar su existencia.
+     */
+    @Transactional(readOnly = true)
+    public void ensureUserCanAccessProject(UUID projectId, UUID tenantId,
+                                           UUID userId, Role role) {
+        requireProjectOfTenant(tenantId, projectId);
+        if (!role.canViewAllProjects()
+                && !assignmentRepository.existsByTenantIdAndProjectIdAndUserId(
+                        tenantId, projectId, userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Proyecto no encontrado");
+        }
     }
 
     @Transactional

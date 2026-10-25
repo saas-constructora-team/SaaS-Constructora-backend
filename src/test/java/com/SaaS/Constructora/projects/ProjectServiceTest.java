@@ -3,6 +3,7 @@ package com.SaaS.Constructora.projects;
 import com.SaaS.Constructora.identity.application.TenantQueryService;
 import com.SaaS.Constructora.identity.domain.Role;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -26,11 +27,13 @@ class ProjectServiceTest {
     private final TenantQueryService tenantQueryService = mock(TenantQueryService.class);
     private final ProjectAssignmentRepository assignmentRepository =
             mock(ProjectAssignmentRepository.class);
+    private final ProjectStageRepository stageRepository = mock(ProjectStageRepository.class);
     private final ProjectService service =
-            new ProjectService(repository, tenantQueryService, assignmentRepository);
+            new ProjectService(repository, tenantQueryService, assignmentRepository, stageRepository);
 
+    @SuppressWarnings("unchecked")
     @Test
-    void creaElProyectoConElTenantRecibido() {
+    void creaElProyectoConElTenantRecibidoYCreaLasEtapasIniciales() {
         UUID tenantId = UUID.randomUUID();
         when(repository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -41,6 +44,16 @@ class ProjectServiceTest {
         assertEquals(tenantId, response.tenantId());
         assertEquals("Torre Central", response.name());
         assertEquals(ProjectStatus.ACTIVE, response.status());
+
+        ArgumentCaptor<List<ProjectStage>> stagesCaptor =
+                ArgumentCaptor.forClass(List.class);
+        verify(stageRepository).saveAll(stagesCaptor.capture());
+        List<ProjectStage> stages = stagesCaptor.getValue();
+        assertEquals(6, stages.size());
+        assertEquals("Estudios Preliminares y Diagnóstico", stages.getFirst().getName());
+        assertEquals(1, stages.getFirst().getStageOrder());
+        assertEquals("Cierre, Liquidación y Entrega", stages.getLast().getName());
+        assertEquals(6, stages.getLast().getStageOrder());
     }
 
     @Test
@@ -53,6 +66,7 @@ class ProjectServiceTest {
                 new CreateProjectRequest("Torre Central", null, null)));
 
         verify(repository, never()).save(any(Project.class));
+        verifyNoInteractions(stageRepository);
     }
 
     @Test
@@ -99,6 +113,68 @@ class ProjectServiceTest {
         assertEquals(List.of(), response);
         verify(repository, never()).findByTenantIdOrderByCreatedAtDesc(tenantId);
         verify(repository, never()).findByTenantIdAndIdInOrderByCreatedAtDesc(any(), any());
+    }
+
+    @Test
+    void adminPuedeAccederAUnProyectoAunqueNoEsteAsignado() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        when(repository.findByIdAndTenantId(projectId, tenantId))
+                .thenReturn(Optional.of(new Project(tenantId, "Proyecto", null, null)));
+
+        service.ensureUserCanAccessProject(projectId, tenantId, userId, Role.ADMIN);
+
+        verify(assignmentRepository, never())
+                .existsByTenantIdAndProjectIdAndUserId(tenantId, projectId, userId);
+    }
+
+    @Test
+    void memberAsignadoPuedeAccederAlProyecto() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        when(repository.findByIdAndTenantId(projectId, tenantId))
+                .thenReturn(Optional.of(new Project(tenantId, "Proyecto", null, null)));
+        when(assignmentRepository.existsByTenantIdAndProjectIdAndUserId(
+                tenantId, projectId, userId)).thenReturn(true);
+
+        service.ensureUserCanAccessProject(projectId, tenantId, userId, Role.MEMBER);
+
+        verify(assignmentRepository)
+                .existsByTenantIdAndProjectIdAndUserId(tenantId, projectId, userId);
+    }
+
+    @Test
+    void memberNoAsignadoNoPuedeAccederAlProyecto() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        when(repository.findByIdAndTenantId(projectId, tenantId))
+                .thenReturn(Optional.of(new Project(tenantId, "Proyecto", null, null)));
+        when(assignmentRepository.existsByTenantIdAndProjectIdAndUserId(
+                tenantId, projectId, userId)).thenReturn(false);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.ensureUserCanAccessProject(
+                        projectId, tenantId, userId, Role.MEMBER));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+    }
+
+    @Test
+    void proyectoDeOtraEmpresaNoEsAccesible() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        when(repository.findByIdAndTenantId(projectId, tenantId)).thenReturn(Optional.empty());
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.ensureUserCanAccessProject(
+                        projectId, tenantId, userId, Role.ADMIN));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verifyNoInteractions(assignmentRepository);
     }
 
     @Test

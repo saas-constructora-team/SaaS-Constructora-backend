@@ -1,10 +1,9 @@
 package com.SaaS.Constructora.projects;
 
-import com.SaaS.Constructora.shared.security.TenantClaims;
+import com.SaaS.Constructora.shared.security.AuthenticatedUser;
+import com.SaaS.Constructora.shared.security.CurrentUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -20,33 +19,28 @@ class ProjectController {
 
     @PostMapping
     ResponseEntity<ProjectResponse> create(
-            @AuthenticationPrincipal Jwt jwt,
+            @CurrentUser AuthenticatedUser user,
             @Valid @RequestBody CreateProjectRequest request) {
-        UUID tenantId = TenantClaims.requireTenantId(jwt);
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(tenantId, request));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(service.create(user.tenantId(), request));
     }
 
     @GetMapping
-    List<ProjectResponse> list(@AuthenticationPrincipal Jwt jwt) {
-        UUID tenantId = TenantClaims.requireTenantId(jwt);
-        return service.list(tenantId,
-                TenantClaims.requireUserId(jwt),
-                TenantClaims.requireRole(jwt));
+    List<ProjectResponse> list(@CurrentUser AuthenticatedUser user) {
+        return service.list(user.tenantId(), user.userId(), user.role());
     }
 
     @PutMapping("/{id}")
     ProjectResponse update(
-            @AuthenticationPrincipal Jwt jwt,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id,
             @Valid @RequestBody UpdateProjectRequest request) {
-        UUID tenantId = TenantClaims.requireTenantId(jwt);
-        return service.update(tenantId, id, request);
+        return service.update(user.tenantId(), id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void delete(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
-        UUID tenantId = TenantClaims.requireTenantId(jwt);
-        service.delete(tenantId, id);
+    void delete(@CurrentUser AuthenticatedUser user, @PathVariable UUID id) {
+        service.delete(user.tenantId(), id);
     }
 }

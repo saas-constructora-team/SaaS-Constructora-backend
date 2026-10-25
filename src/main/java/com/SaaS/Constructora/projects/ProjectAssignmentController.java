@@ -1,11 +1,10 @@
 package com.SaaS.Constructora.projects;
 
-import com.SaaS.Constructora.shared.security.TenantClaims;
+import com.SaaS.Constructora.shared.security.AuthenticatedUser;
+import com.SaaS.Constructora.shared.security.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,33 +26,30 @@ class ProjectAssignmentController {
 
     @PostMapping
     ResponseEntity<ProjectAssignmentResponse> assign(
-            @AuthenticationPrincipal Jwt jwt,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID projectId,
             @Valid @RequestBody AssignProjectRequest request) {
-        TenantClaims.requireAdmin(jwt);
-        UUID tenantId = TenantClaims.requireTenantId(jwt);
+        user.requireAdmin();
         ProjectAssignmentResponse response = service.assign(
-                tenantId, projectId, request.userId());
+                user.tenantId(), projectId, request.userId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
     List<ProjectAssignmentResponse> list(
-            @AuthenticationPrincipal Jwt jwt,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID projectId) {
-        TenantClaims.requireAdmin(jwt);
-        UUID tenantId = TenantClaims.requireTenantId(jwt);
-        return service.list(tenantId, projectId);
+        user.requireAdmin();
+        return service.list(user.tenantId(), projectId);
     }
 
     @DeleteMapping("/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void unassign(
-            @AuthenticationPrincipal Jwt jwt,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID projectId,
             @PathVariable UUID userId) {
-        TenantClaims.requireAdmin(jwt);
-        UUID tenantId = TenantClaims.requireTenantId(jwt);
-        service.unassign(tenantId, projectId, userId);
+        user.requireAdmin();
+        service.unassign(user.tenantId(), projectId, userId);
     }
 }
