@@ -1,10 +1,12 @@
 package com.saas.constructora.modules.identity.infrastructure;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
     Optional<UserJpaEntity> findByEmail(String email);
     boolean existsByEmail(String email);
+    List<UserJpaEntity> findByTenantIdOrderByFullNameAsc(UUID tenantId);
 }
