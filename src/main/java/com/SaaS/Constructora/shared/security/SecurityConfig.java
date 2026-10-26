@@ -25,10 +25,9 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/error", "/actuator/**",
-                        "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/projects/**", "/api/users/**").authenticated()
-                .anyRequest().permitAll())
+                .anyRequest().authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
         return http.build();
     }

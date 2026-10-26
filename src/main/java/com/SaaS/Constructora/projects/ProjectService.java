@@ -27,7 +27,8 @@ public class ProjectService {
     }
 
     @Transactional
-    public ProjectResponse create(UUID tenantId, CreateProjectRequest req) {
+    public ProjectResponse create(UUID tenantId, Role role, CreateProjectRequest req) {
+        requireCanCreate(role);
         // Validación contextual: la empresa debe existir antes de asociarle proyectos.
         tenantQueryService.ensureExists(tenantId);
         Project project = new Project(tenantId, req.toDetails());
@@ -79,25 +80,57 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public void ensureUserCanAccessProject(UUID projectId, UUID tenantId,
                                            UUID userId, Role role) {
-        requireProjectOfTenant(tenantId, projectId);
+        requireAccessibleProject(projectId, tenantId, userId, role);
+    }
+
+    /**
+     * ADMIN edita cualquier proyecto de su empresa; un MEMBER solo los que
+     * tiene asignados. El proyecto se resuelve una sola vez para aplicar el
+     * aislamiento de tenant y la autorización sobre la misma entidad.
+     */
+    @Transactional
+    public ProjectResponse update(UUID tenantId, UUID projectId, UUID userId, Role role,
+                                  UpdateProjectRequest req) {
+        Project project = requireAccessibleProject(projectId, tenantId, userId, role);
+        project.updateDetails(req.toDetails());
+        return ProjectResponse.from(project);
+    }
+
+    @Transactional
+    public void delete(UUID tenantId, UUID projectId, UUID userId, Role role) {
+        requireCanDelete(role);
+        repository.delete(requireProjectOfTenant(tenantId, projectId));
+    }
+
+    private void requireCanCreate(Role role) {
+        if (!role.canCreateProject()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Se requiere rol de administrador para crear proyectos");
+        }
+    }
+
+    private void requireCanDelete(Role role) {
+        if (!role.canDeleteProject()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Se requiere rol de administrador para eliminar proyectos");
+        }
+    }
+
+    /**
+     * Valida tenant y acceso en una sola resolución del proyecto. Un proyecto
+     * no asignado se reporta como inexistente (404) para no revelar su
+     * existencia a un MEMBER.
+     */
+    private Project requireAccessibleProject(UUID projectId, UUID tenantId,
+                                             UUID userId, Role role) {
+        Project project = requireProjectOfTenant(tenantId, projectId);
         if (!role.canViewAllProjects()
                 && !assignmentRepository.existsByTenantIdAndProjectIdAndUserId(
                         tenantId, projectId, userId)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND, "Proyecto no encontrado");
         }
-    }
-
-    @Transactional
-    public ProjectResponse update(UUID tenantId, UUID projectId, UpdateProjectRequest req) {
-        Project project = requireProjectOfTenant(tenantId, projectId);
-        project.updateDetails(req.toDetails());
-        return ProjectResponse.from(project);
-    }
-
-    @Transactional
-    public void delete(UUID tenantId, UUID projectId) {
-        repository.delete(requireProjectOfTenant(tenantId, projectId));
+        return project;
     }
 
     /**

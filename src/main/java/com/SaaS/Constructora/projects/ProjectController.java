@@ -22,7 +22,7 @@ class ProjectController {
             @CurrentUser AuthenticatedUser user,
             @Valid @RequestBody CreateProjectRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(user.tenantId(), request));
+                .body(service.create(user.tenantId(), user.role(), request));
     }
 
     @GetMapping
@@ -35,12 +35,13 @@ class ProjectController {
             @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id,
             @Valid @RequestBody UpdateProjectRequest request) {
-        return service.update(user.tenantId(), id, request);
+        return service.update(
+                user.tenantId(), id, user.userId(), user.role(), request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@CurrentUser AuthenticatedUser user, @PathVariable UUID id) {
-        service.delete(user.tenantId(), id);
+        service.delete(user.tenantId(), id, user.userId(), user.role());
     }
 }
