@@ -11,8 +11,12 @@ import java.util.UUID;
 class UserRepositoryAdapter implements UserRepository {
 
     private final UserJpaRepository repository;
+    private final MembershipJpaRepository membershipRepository;
 
-    UserRepositoryAdapter(UserJpaRepository repository) { this.repository = repository; }
+    UserRepositoryAdapter(UserJpaRepository repository, MembershipJpaRepository membershipRepository) {
+        this.repository = repository;
+        this.membershipRepository = membershipRepository;
+    }
 
     @Override
     public Optional<User> findByEmail(String email) {
@@ -26,9 +30,12 @@ class UserRepositoryAdapter implements UserRepository {
 
     @Override
     public List<User> findByTenantIdOrderByFullNameAsc(UUID tenantId) {
-        return repository.findByTenantIdOrderByFullNameAsc(tenantId)
-                .stream()
+        // Buscar usuarios que tengan membresía activa en el tenant
+        return membershipRepository.findByTenantIdAndActiveTrue(tenantId).stream()
+                .map(m -> repository.findById(m.getUserId()).orElse(null))
+                .filter(java.util.Objects::nonNull)
                 .map(UserRepositoryAdapter::toDomain)
+                .sorted(java.util.Comparator.comparing(User::getFullName))
                 .toList();
     }
 
@@ -40,8 +47,8 @@ class UserRepositoryAdapter implements UserRepository {
     @Override
     public User save(User user) {
         UserJpaEntity saved = repository.save(new UserJpaEntity(
-                user.getId(), user.getTenantId(), user.getEmail(), user.getFullName(),
-                user.getPasswordHash(), user.getRole(), user.isActive(), user.getCreatedAt()));
+                user.getId(), user.getEmail(), user.getFullName(),
+                user.getPasswordHash(), user.isActive(), user.getCreatedAt()));
         return toDomain(saved);
     }
 
@@ -54,7 +61,7 @@ class UserRepositoryAdapter implements UserRepository {
     }
 
     private static User toDomain(UserJpaEntity e) {
-        return new User(e.getId(), e.getTenantId(), e.getEmail(), e.getFullName(),
-                e.getPasswordHash(), e.getRole(), e.isActive(), e.getCreatedAt());
+        return new User(e.getId(), e.getEmail(), e.getFullName(),
+                e.getPasswordHash(), e.isActive(), e.getCreatedAt());
     }
 }

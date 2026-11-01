@@ -1,6 +1,9 @@
 package com.SaaS.Constructora.projects;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -9,6 +12,8 @@ import java.util.UUID;
  * Las referencias a proyecto y usuario se guardan por ID; no se usan
  * asociaciones JPA para mantener desacoplados los módulos.
  */
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = UUID.class))
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Entity
 @Table(name = "project_assignments")
 public class ProjectAssignment {

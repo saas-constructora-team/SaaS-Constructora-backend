@@ -3,9 +3,11 @@ package com.SaaS.Constructora.identity.application;
 import com.SaaS.Constructora.identity.application.ports.EmailSender;
 import com.SaaS.Constructora.identity.application.ports.ExternalIdentityRepository;
 import com.SaaS.Constructora.identity.application.ports.GoogleTokenVerifier;
+import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
 import com.SaaS.Constructora.identity.application.ports.TenantRepository;
 import com.SaaS.Constructora.identity.application.ports.UserRepository;
 import com.SaaS.Constructora.identity.domain.ExternalIdentity;
+import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.identity.domain.Tenant;
 import com.SaaS.Constructora.identity.domain.User;
@@ -48,6 +50,7 @@ public class GoogleAuthUseCase {
     private final GoogleTokenVerifier googleTokenVerifier;
     private final ExternalIdentityRepository externalIdentityRepository;
     private final UserRepository userRepository;
+    private final MembershipRepository membershipRepository;
     private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailSender emailSender;
@@ -57,6 +60,7 @@ public class GoogleAuthUseCase {
     public GoogleAuthUseCase(GoogleTokenVerifier googleTokenVerifier,
                              ExternalIdentityRepository externalIdentityRepository,
                              UserRepository userRepository,
+                             MembershipRepository membershipRepository,
                              TenantRepository tenantRepository,
                              PasswordEncoder passwordEncoder,
                              EmailSender emailSender,
@@ -64,6 +68,7 @@ public class GoogleAuthUseCase {
         this.googleTokenVerifier = googleTokenVerifier;
         this.externalIdentityRepository = externalIdentityRepository;
         this.userRepository = userRepository;
+        this.membershipRepository = membershipRepository;
         this.tenantRepository = tenantRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailSender = emailSender;
@@ -83,7 +88,7 @@ public class GoogleAuthUseCase {
                     .filter(User::canAuthenticate)
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.UNAUTHORIZED, "La cuenta está desactivada"));
-            return session(user, false);
+            return session(user, requireActiveMembership(user), false);
         }
 
         // 2) El correo ya existe -> vincular Google a la cuenta existente y entrar
@@ -95,7 +100,7 @@ public class GoogleAuthUseCase {
             }
             externalIdentityRepository.save(ExternalIdentity.google(user.getId(), account.subject(), now));
             log.info("Identidad de Google vinculada a la cuenta existente {}", user.getEmail());
-            return session(user, false);
+            return session(user, requireActiveMembership(user), false);
         }
 
         // 3) Cuenta nueva -> registro abierto con Google
@@ -110,14 +115,19 @@ public class GoogleAuthUseCase {
         // Con HU-13 puede fijar una contraseña propia si algún día quiere entrar sin Google.
         String randomPassword = randomUrlSafeToken();
         User user = userRepository.save(new User(
-                UUID.randomUUID(), tenant.getId(), account.email(), account.fullName(),
-                passwordEncoder.encode(randomPassword), Role.ADMIN, true, now));
+                UUID.randomUUID(), account.email(), account.fullName(),
+                passwordEncoder.encode(randomPassword), true, now));
+
+        // Crear membresía ADMIN para el usuario en el tenant
+        Membership membership = new Membership(
+                UUID.randomUUID(), user.getId(), tenant.getId(), Role.ADMIN, true, now);
+        membershipRepository.save(membership);
 
         externalIdentityRepository.save(ExternalIdentity.google(user.getId(), account.subject(), now));
         log.info("Cuenta creada con Google para {} en la empresa {}", user.getEmail(), tenant.getSlug());
         emailSender.sendWelcomeEmail(user.getEmail(), user.getFullName(), tenant.getName());
 
-        return session(user, true);
+        return session(user, membership, true);
     }
 
     /**
@@ -172,12 +182,24 @@ public class GoogleAuthUseCase {
         }
     }
 
-    private GoogleAuthResponse session(User user, boolean newUser) {
-        Tenant tenant = tenantRepository.findById(user.getTenantId())
+    private GoogleAuthResponse session(User user, Membership membership, boolean newUser) {
+        Tenant tenant = tenantRepository.findById(membership.getTenantId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.INTERNAL_SERVER_ERROR, "No se encontró la empresa del usuario"));
-        String token = jwtService.generateToken(user);
-        return GoogleAuthResponse.from(token, jwtService.getTokenTtlSeconds(), newUser, tenant, user);
+        String token = jwtService.generateToken(user, membership);
+        return GoogleAuthResponse.from(token, jwtService.getTokenTtlSeconds(), newUser, tenant, user, membership);
+    }
+
+    /**
+     * Obtiene la membresía activa del usuario para resolver el tenant y el rol auténticos.
+     * Si el usuario pertenece a varios tenants, se toma la primera membresía activa.
+     */
+    private Membership requireActiveMembership(User user) {
+        return membershipRepository.findActiveByUserId(user.getId())
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "El usuario no tiene membresía activa en ninguna empresa"));
     }
 
     private String randomUrlSafeToken() {

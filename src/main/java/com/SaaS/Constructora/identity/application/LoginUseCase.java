@@ -1,6 +1,8 @@
 package com.SaaS.Constructora.identity.application;
 
+import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
 import com.SaaS.Constructora.identity.application.ports.UserRepository;
+import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.User;
 import com.SaaS.Constructora.identity.interfaces.dto.LoginRequest;
 import com.SaaS.Constructora.identity.interfaces.dto.LoginResponse;
@@ -15,18 +17,23 @@ import org.springframework.web.server.ResponseStatusException;
  * Caso de uso HU-01: login inicial de la aplicación.
  * Validación contextual: existencia del usuario, coincidencia de credenciales y estado activo.
  * Toda falla de autenticación responde 401 sin revelar si el email existe.
+ * El rol y tenant se obtienen desde Membership (no desde User).
  */
 @Service
 public class LoginUseCase {
 
     static final String CREDENCIALES_INVALIDAS = "Credenciales inválidas";
+    static final String SIN_MEMBRESIA_ACTIVA = "El usuario no tiene membresía activa en ninguna empresa";
 
     private final UserRepository userRepository;
+    private final MembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public LoginUseCase(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public LoginUseCase(UserRepository userRepository, MembershipRepository membershipRepository,
+                        PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
+        this.membershipRepository = membershipRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -39,7 +46,14 @@ public class LoginUseCase {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED, CREDENCIALES_INVALIDAS));
 
-        String token = jwtService.generateToken(user);
-        return LoginResponse.from(token, jwtService.getTokenTtlSeconds(), user);
+        // Obtener la membresía activa del usuario (para obtener tenant y rol)
+        Membership membership = membershipRepository.findActiveByUserId(user.getId())
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, SIN_MEMBRESIA_ACTIVA));
+
+        String token = jwtService.generateToken(user, membership);
+        return LoginResponse.from(token, jwtService.getTokenTtlSeconds(), user, membership);
     }
 }
