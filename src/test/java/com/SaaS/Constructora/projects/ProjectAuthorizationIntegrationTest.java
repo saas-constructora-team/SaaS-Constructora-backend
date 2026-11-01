@@ -194,12 +194,18 @@ class ProjectAuthorizationIntegrationTest {
     }
 
     private Session createMemberSession(UUID tenantId, String email) throws Exception {
+        UUID userId = UUID.randomUUID();
         jdbc.update("""
-                INSERT INTO users (id, tenant_id, email, full_name, password_hash, role, active)
-                VALUES (?, ?, ?, ?, ?, 'MEMBER', TRUE)
+                INSERT INTO users (id, email, full_name, password_hash, active)
+                VALUES (?, ?, ?, ?, TRUE)
                 """,
-                UUID.randomUUID(), tenantId, email, "Miembro " + email,
+                userId, email, "Miembro " + email,
                 passwordEncoder.encode(MEMBER_PASSWORD));
+        jdbc.update("""
+                INSERT INTO memberships (id, user_id, tenant_id, role, active)
+                VALUES (?, ?, ?, 'MEMBER', TRUE)
+                """,
+                UUID.randomUUID(), userId, tenantId);
         return login(email, MEMBER_PASSWORD);
     }
 

@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.identity.interfaces.dto;
 
+import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.Tenant;
 import com.SaaS.Constructora.identity.domain.User;
 import java.util.UUID;
@@ -24,8 +25,8 @@ public record GoogleAuthResponse(
     }
 
     public static GoogleAuthResponse from(String accessToken, long expiresInSeconds,
-                                          boolean newUser, Tenant tenant, User user) {
+                                          boolean newUser, Tenant tenant, User user, Membership membership) {
         return new GoogleAuthResponse(accessToken, "Bearer", expiresInSeconds, newUser,
-                TenantResponse.from(tenant), LoginResponse.UserResponse.from(user));
+                TenantResponse.from(tenant), LoginResponse.UserResponse.from(user, membership));
     }
 }

@@ -1,7 +1,9 @@
 package com.SaaS.Constructora.identity.application;
 
+import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
 import com.SaaS.Constructora.identity.application.ports.TenantRepository;
 import com.SaaS.Constructora.identity.application.ports.UserRepository;
+import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.identity.domain.Tenant;
 import com.SaaS.Constructora.identity.domain.User;
@@ -20,20 +22,23 @@ import java.util.UUID;
 /**
  * Caso de uso HU-01: registro abierto de una empresa nueva (tenant) + su usuario administrador.
  * Validación contextual: email y slug únicos. Registro abierto: no requiere autenticación previa.
- * Crea tenant y admin en una sola transacción y devuelve sesión iniciada (JWT).
+ * Crea tenant, admin y membership(ADMIN) en una sola transacción y devuelve sesión iniciada (JWT).
  */
 @Service
 public class RegisterTenantUseCase {
 
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
+    private final MembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public RegisterTenantUseCase(TenantRepository tenantRepository, UserRepository userRepository,
+                                 MembershipRepository membershipRepository,
                                  PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
+        this.membershipRepository = membershipRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -55,10 +60,15 @@ public class RegisterTenantUseCase {
                 new Tenant(UUID.randomUUID(), request.companyName().trim(), slug, now));
 
         User admin = userRepository.save(new User(
-                UUID.randomUUID(), tenant.getId(), email, request.adminFullName().trim(),
-                passwordEncoder.encode(request.adminPassword()), Role.ADMIN, true, now));
+                UUID.randomUUID(), email, request.adminFullName().trim(),
+                passwordEncoder.encode(request.adminPassword()), true, now));
 
-        String token = jwtService.generateToken(admin);
-        return RegisterTenantResponse.from(token, jwtService.getTokenTtlSeconds(), tenant, admin);
+        // Crear membresía ADMIN para el usuario en el tenant
+        Membership membership = new Membership(
+                UUID.randomUUID(), admin.getId(), tenant.getId(), Role.ADMIN, true, now);
+        membershipRepository.save(membership);
+
+        String token = jwtService.generateToken(admin, membership);
+        return RegisterTenantResponse.from(token, jwtService.getTokenTtlSeconds(), tenant, admin, membership);
     }
 }

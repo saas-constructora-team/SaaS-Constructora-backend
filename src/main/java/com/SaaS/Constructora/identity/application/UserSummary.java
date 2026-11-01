@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.identity.application;
 
+import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.identity.domain.User;
 
@@ -17,8 +18,8 @@ public record UserSummary(
         Role role,
         boolean active
 ) {
-    public static UserSummary from(User user) {
+    public static UserSummary from(User user, Membership membership) {
         return new UserSummary(user.getId(), user.getEmail(), user.getFullName(),
-                user.getRole(), user.isActive());
+                membership.getRole(), user.isActive());
     }
 }

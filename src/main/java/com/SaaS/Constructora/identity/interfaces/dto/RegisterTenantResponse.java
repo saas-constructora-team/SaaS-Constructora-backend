@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.identity.interfaces.dto;
 
+import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.Tenant;
 import com.SaaS.Constructora.identity.domain.User;
 import java.util.UUID;
@@ -18,8 +19,8 @@ public record RegisterTenantResponse(
     }
 
     public static RegisterTenantResponse from(String accessToken, long expiresInSeconds,
-                                              Tenant tenant, User admin) {
+                                              Tenant tenant, User admin, Membership membership) {
         return new RegisterTenantResponse(accessToken, "Bearer", expiresInSeconds,
-                TenantResponse.from(tenant), LoginResponse.UserResponse.from(admin));
+                TenantResponse.from(tenant), LoginResponse.UserResponse.from(admin, membership));
     }
 }

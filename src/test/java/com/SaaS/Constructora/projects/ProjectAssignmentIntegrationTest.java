@@ -272,12 +272,18 @@ class ProjectAssignmentIntegrationTest {
     }
 
     private void createMember(UUID tenantId, String email, String fullName) {
+        UUID userId = UUID.randomUUID();
         jdbc.update("""
-                INSERT INTO users (id, tenant_id, email, full_name, password_hash, role, active)
-                VALUES (?, ?, ?, ?, ?, 'MEMBER', TRUE)
+                INSERT INTO users (id, email, full_name, password_hash, active)
+                VALUES (?, ?, ?, ?, TRUE)
                 """,
-                UUID.randomUUID(), tenantId, email, fullName,
+                userId, email, fullName,
                 passwordEncoder.encode(MEMBER_PASSWORD));
+        jdbc.update("""
+                INSERT INTO memberships (id, user_id, tenant_id, role, active)
+                VALUES (?, ?, ?, 'MEMBER', TRUE)
+                """,
+                UUID.randomUUID(), userId, tenantId);
     }
 
     private UUID createProject(String token, String name) throws Exception {

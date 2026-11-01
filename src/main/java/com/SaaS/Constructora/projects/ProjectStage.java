@@ -1,6 +1,9 @@
 package com.SaaS.Constructora.projects;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +13,8 @@ import java.util.UUID;
  * Etapa de un proyecto. El orden se asigna al crear la etapa y no cambia al
  * editarla. Las etapas iniciales se crean automáticamente con cada proyecto.
  */
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = UUID.class))
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Entity
 @Table(name = "project_stages")
 public class ProjectStage {

@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.shared.security;
 
+import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.User;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -51,16 +52,16 @@ public class JwtService {
         this.ttlSeconds = Duration.ofMinutes(ttlMinutes).toSeconds();
     }
 
-    public String generateToken(User user) {
+    public String generateToken(User user, Membership membership) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(ISSUER)
                 .subject(user.getId().toString())
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(ttlSeconds))
-                .claim(TENANT_CLAIM, user.getTenantId().toString())
+                .claim(TENANT_CLAIM, membership.getTenantId().toString())
                 .claim("email", user.getEmail())
-                .claim(ROLE_CLAIM, user.getRole().name())
+                .claim(ROLE_CLAIM, membership.getRole().name())
                 .build();
 
         JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256)
