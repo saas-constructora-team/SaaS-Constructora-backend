@@ -15,14 +15,16 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.stereotype.Service;
 import java.security.interfaces.RSAPublicKey;
+import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.KeyFactory;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
 /**
  * Emisión de JWTs (RS256) para el módulo identity.
- * La clave RSA se genera al arrancar la aplicación; los tokens emitidos
- * caducan al reiniciar el proceso. Suficiente para el login inicial.
  */
 @Service
 public class JwtService {
@@ -40,13 +42,14 @@ public class JwtService {
     private final NimbusJwtEncoder encoder;
     private final long ttlSeconds;
 
-    public JwtService(@Value("${app.security.jwt.ttl-minutes:60}") long ttlMinutes) {
+    public JwtService(@Value("${app.security.jwt.ttl-minutes:60}") long ttlMinutes,
+                      @Value("${app.security.jwt.private-key:}") String configuredPrivateKey) {
         try {
-            this.signingKey = new RSAKeyGenerator(2048)
-                    .keyID(UUID.randomUUID().toString())
-                    .generate();
-        } catch (JOSEException e) {
-            throw new IllegalStateException("No se pudo generar la clave RSA para firmar JWTs", e);
+            this.signingKey = configuredPrivateKey.isBlank()
+                    ? generateSigningKey()
+                    : loadSigningKey(configuredPrivateKey);
+        } catch (Exception e) {
+            throw new IllegalStateException("No se pudo inicializar la clave RSA para firmar JWTs", e);
         }
         this.encoder = new NimbusJwtEncoder(new ImmutableJWKSet<>(new JWKSet(signingKey)));
         this.ttlSeconds = Duration.ofMinutes(ttlMinutes).toSeconds();
@@ -82,5 +85,28 @@ public class JwtService {
         } catch (JOSEException e) {
             throw new IllegalStateException("No se pudo obtener la clave pública para validar JWTs", e);
         }
+    }
+
+    private static RSAKey generateSigningKey() throws JOSEException {
+        return new RSAKeyGenerator(2048)
+                .keyID(UUID.randomUUID().toString())
+                .generate();
+    }
+
+    private static RSAKey loadSigningKey(String pem) throws Exception {
+        String encodedKey = pem.replace("\\n", "\n")
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+        byte[] keyBytes = Base64.getDecoder().decode(encodedKey);
+        RSAPrivateCrtKey privateKey = (RSAPrivateCrtKey) KeyFactory.getInstance("RSA")
+                .generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+        RSAPublicKey publicKey = (RSAPublicKey) KeyFactory.getInstance("RSA")
+                .generatePublic(new java.security.spec.RSAPublicKeySpec(
+                        privateKey.getModulus(), privateKey.getPublicExponent()));
+        return new RSAKey.Builder(publicKey)
+                .privateKey(privateKey)
+                .keyID(UUID.randomUUID().toString())
+                .build();
     }
 }
