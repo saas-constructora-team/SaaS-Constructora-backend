@@ -1,9 +1,12 @@
 package com.SaaS.Constructora.shared.security;
 
+import com.SaaS.Constructora.shared.api.ApiError;
 import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -30,7 +33,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
+    SecurityFilterChain apiSecurity(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -39,11 +42,24 @@ public class SecurityConfig {
                         "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().authenticated())
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, exception) -> {
+                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                    response.setContentType("application/json");
+                    objectMapper.writeValue(response.getOutputStream(), ApiError.of(
+                            HttpStatus.UNAUTHORIZED.value(), "Unauthorized", "Se requiere autenticación"));
+                })
+                .accessDeniedHandler((request, response, exception) -> {
+                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                    response.setContentType("application/json");
+                    objectMapper.writeValue(response.getOutputStream(), ApiError.of(
+                            HttpStatus.FORBIDDEN.value(), "Forbidden", "No tiene permiso para esta operación"));
+                }))
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
             // Debe ir después del resource server: allí ya está poblado el SecurityContext
             // con el JWT validado, del que se obtienen usuario y tenant.
             .addFilterAfter(
-                new MembershipValidationFilter(membershipRepository, entityManager),
+                new MembershipValidationFilter(membershipRepository, entityManager, objectMapper),
                 BearerTokenAuthenticationFilter.class);
         return http.build();
     }
