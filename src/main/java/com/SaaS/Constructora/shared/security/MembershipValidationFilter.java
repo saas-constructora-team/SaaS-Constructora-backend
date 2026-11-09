@@ -1,7 +1,9 @@
 package com.SaaS.Constructora.shared.security;
 
+import com.SaaS.Constructora.shared.api.ApiError;
 import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
 import com.SaaS.Constructora.identity.domain.Membership;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,6 +14,7 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -42,11 +45,13 @@ public class MembershipValidationFilter extends OncePerRequestFilter {
 
     private final MembershipRepository membershipRepository;
     private final EntityManager entityManager;
+    private final ObjectMapper objectMapper;
 
     public MembershipValidationFilter(MembershipRepository membershipRepository,
-                                      EntityManager entityManager) {
+                                      EntityManager entityManager, ObjectMapper objectMapper) {
         this.membershipRepository = membershipRepository;
         this.entityManager = entityManager;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -58,7 +63,7 @@ public class MembershipValidationFilter extends OncePerRequestFilter {
         } catch (ResponseStatusException ex) {
             // La excepción se lanza dentro de un filtro, fuera del DispatcherServlet:
             // hay que trasladarla a la respuesta HTTP para no terminar en un 500.
-            response.sendError(ex.getStatusCode().value(), ex.getReason());
+            writeError(response, ex);
             return;
         }
         if (user == null) {
@@ -75,7 +80,7 @@ public class MembershipValidationFilter extends OncePerRequestFilter {
                             HttpStatus.FORBIDDEN,
                             "Usuario no tiene membresía activa en esta empresa"));
         } catch (ResponseStatusException ex) {
-            response.sendError(ex.getStatusCode().value(), ex.getReason());
+            writeError(response, ex);
             return;
         }
 
@@ -88,6 +93,16 @@ public class MembershipValidationFilter extends OncePerRequestFilter {
         } finally {
             TenantContext.clear();
         }
+    }
+
+    private void writeError(HttpServletResponse response, ResponseStatusException exception)
+            throws IOException {
+        int status = exception.getStatusCode().value();
+        HttpStatus httpStatus = HttpStatus.valueOf(status);
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(response.getOutputStream(), ApiError.of(
+                status, httpStatus.getReasonPhrase(), exception.getReason()));
     }
 
     /** Extrae el contexto del JWT que el resource server dejó en el SecurityContext. */
