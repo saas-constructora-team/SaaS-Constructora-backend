@@ -12,8 +12,8 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/ConstructoraApplication.java": {
-    "mtime": 1793032011.4869246,
-    "seen": 1793545641.660482,
+    "mtime": 1793556102.7019906,
+    "seen": 1793651080.1254745,
     "ast_hash": "7cbae476b1f5cdfe2fb4041ad4ec7aa8",
     "semantic_hash": ""
   },
@@ -114,9 +114,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/domain/Membership.java": {
-    "mtime": 1793543733.2767704,
-    "seen": 1793545641.6605093,
-    "ast_hash": "6565d21c3e1ce818e462ded6b54741d0",
+    "mtime": 1793650995.2128944,
+    "seen": 1793651080.125513,
+    "ast_hash": "3101fe7061fd6bb5fd3a546c4f43d121",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/domain/PasswordResetToken.java": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/interfaces/UserController.java": {
-    "mtime": 1793032011.4909246,
-    "seen": 1793545641.6605496,
-    "ast_hash": "10797ba4c583a76c285581f6e3f79634",
+    "mtime": 1793651005.060681,
+    "seen": 1793651080.1255574,
+    "ast_hash": "bc312b699b47c25479896ab49c5497c9",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/interfaces/dto/ForgotPasswordRequest.java": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/projects/AssignProjectRequest.java": {
-    "mtime": 1793032011.4909246,
-    "seen": 1793545641.660566,
-    "ast_hash": "e2a2a7f88af1d115295a23f18cbd60db",
+    "mtime": 1793676170.8970468,
+    "seen": 1793676411.1067772,
+    "ast_hash": "a18d878f3767ee5be3b7fc1b888bb5df",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/projects/BudgetRange.java": {
@@ -366,33 +366,33 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/projects/ProjectAssignment.java": {
-    "mtime": 1793549106.954736,
-    "seen": 1793555434.192023,
-    "ast_hash": "6d06c45f9abd74355075e9d3d3b92817",
+    "mtime": 1793676163.5051134,
+    "seen": 1793676411.106789,
+    "ast_hash": "1d11d1a5ff2a2cd39969d7ebea4e9da6",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/projects/ProjectAssignmentController.java": {
-    "mtime": 1793032011.4909246,
-    "seen": 1793545641.6605763,
-    "ast_hash": "6ac2ac98b5c1d2bf42e84e40729b2433",
+    "mtime": 1793676576.8761253,
+    "seen": 1793676739.609712,
+    "ast_hash": "f67045e4a92ce5f8a83d4eb89d660529",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/projects/ProjectAssignmentRepository.java": {
-    "mtime": 1793032011.4909246,
-    "seen": 1793545641.6605778,
-    "ast_hash": "81a93e88375a31239003182416fab0ac",
+    "mtime": 1793676166.3370879,
+    "seen": 1793676411.1067927,
+    "ast_hash": "a6382d5a827425e27a51e1649b1f9014",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/projects/ProjectAssignmentResponse.java": {
-    "mtime": 1793032011.4949245,
-    "seen": 1793545641.6605794,
-    "ast_hash": "518e946ce0139c9f138fc3b5e50b5e67",
+    "mtime": 1793676170.9010468,
+    "seen": 1793676411.1067944,
+    "ast_hash": "c7e093dda4f3d6ab4289f8227a3b9685",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/projects/ProjectAssignmentService.java": {
-    "mtime": 1793032011.4949245,
-    "seen": 1793545641.6605809,
-    "ast_hash": "4fd58ac21090272ecb96151393087785",
+    "mtime": 1793676875.1554947,
+    "seen": 1793676905.6414013,
+    "ast_hash": "78789630573a4ddecd64bb1e7660aa5a",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/projects/ProjectController.java": {
@@ -612,9 +612,9 @@
     "semantic_hash": ""
   },
   "src/test/java/com/SaaS/Constructora/projects/ProjectAssignmentServiceTest.java": {
-    "mtime": 1793032011.4949245,
-    "seen": 1793545641.6606367,
-    "ast_hash": "2177888a80a64d4f18495f24b499ee05",
+    "mtime": 1793676591.1319184,
+    "seen": 1793676739.6097991,
+    "ast_hash": "2880ef814272e987ac7158bec766f690",
     "semantic_hash": ""
   },
   "src/test/java/com/SaaS/Constructora/projects/ProjectAuthorizationIntegrationTest.java": {
@@ -669,6 +669,48 @@
     "mtime": 1793546855.2016265,
     "seen": 1793547032.8554096,
     "ast_hash": "e0955be4401d90fcf94222079f1d7666",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/application/PermissionManagementUseCase.java": {
+    "mtime": 1793650998.8408158,
+    "seen": 1793651080.1254835,
+    "ast_hash": "ae42be4b1e1890fbb5c48290f4afb65b",
+    "semantic_hash": ""
+  },
+  "src/main/resources/db/migration/V9__migrate_identity_to_memberships.sql": {
+    "mtime": 1793556366.0091982,
+    "seen": 1793651080.1256573,
+    "ast_hash": "165f94cd2977a2999015fd45e834e9ba",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/projects/ProjectRole.java": {
+    "mtime": 1793676159.39715,
+    "seen": 1793676411.1068065,
+    "ast_hash": "2b8b5be65c8f63d17a7604e658cd231c",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/projects/UpdateProjectAssignmentRequest.java": {
+    "mtime": 1793676170.8890467,
+    "seen": 1793676411.1068234,
+    "ast_hash": "83899ee6e39145994bc30b97c157921a",
+    "semantic_hash": ""
+  },
+  "src/main/resources/db/migration/V10__add_role_to_project_assignments.sql": {
+    "mtime": 1793676185.0409162,
+    "seen": 1793676411.1068516,
+    "ast_hash": "5745ca8d6b21ece1bdb9d9c347144cec",
+    "semantic_hash": ""
+  },
+  "src/test/java/com/SaaS/Constructora/projects/ProjectAssignmentDelegationIntegrationTest.java": {
+    "mtime": 1793676368.7509177,
+    "seen": 1793676411.106876,
+    "ast_hash": "fc553038bd4d43fa911fec11adbaff16",
+    "semantic_hash": ""
+  },
+  "src/test/java/com/SaaS/Constructora/projects/ProjectAssignmentDelegationTest.java": {
+    "mtime": 1793676605.4837086,
+    "seen": 1793676739.6097956,
+    "ast_hash": "7010aad57d3563321c2dba0f37fb39af",
     "semantic_hash": ""
   }
 }

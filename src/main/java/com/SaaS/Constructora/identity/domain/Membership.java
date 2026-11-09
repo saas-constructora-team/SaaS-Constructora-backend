@@ -25,6 +25,14 @@ public class Membership {
         this.createdAt = createdAt;
     }
 
+    /**
+     * Devuelve una copia de esta membresía con el rol indicado.
+     * La entidad es inmutable: los cambios de permisos crean una nueva instancia.
+     */
+    public Membership withRole(Role newRole) {
+        return new Membership(id, userId, tenantId, newRole, active, createdAt);
+    }
+
     public UUID getId() { return id; }
     public UUID getUserId() { return userId; }
     public UUID getTenantId() { return tenantId; }

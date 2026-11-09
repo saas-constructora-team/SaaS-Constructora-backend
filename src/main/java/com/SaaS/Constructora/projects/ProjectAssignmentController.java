@@ -11,8 +11,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Asignaciones de personal a un proyecto. Solo ADMIN puede consultarlas,
- * crearlas o eliminarlas; el tenant siempre se toma del JWT.
+ * Asignaciones de personal a un proyecto y delegación de su gestión.
+ * Un ADMIN del tenant puede operar sobre cualquier proyecto; un MEMBER solo
+ * si fue nombrado LEAD del proyecto. El tenant siempre se toma del JWT.
  */
 @RestController
 @RequestMapping("/api/projects/{projectId}/assignments")
@@ -29,18 +30,29 @@ class ProjectAssignmentController {
             @CurrentUser AuthenticatedUser user,
             @PathVariable UUID projectId,
             @Valid @RequestBody AssignProjectRequest request) {
-        user.requireAdmin();
         ProjectAssignmentResponse response = service.assign(
-                user.tenantId(), projectId, request.userId());
+                user.tenantId(), projectId, request.userId(),
+                request.roleOrDefault(), user.userId(), user.role());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{userId}")
+    ProjectAssignmentResponse updateRole(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable UUID projectId,
+            @PathVariable UUID userId,
+            @Valid @RequestBody UpdateProjectAssignmentRequest request) {
+        return service.updateRole(
+                user.tenantId(), projectId, userId, request.role(),
+                user.userId(), user.role());
     }
 
     @GetMapping
     List<ProjectAssignmentResponse> list(
             @CurrentUser AuthenticatedUser user,
             @PathVariable UUID projectId) {
-        user.requireAdmin();
-        return service.list(user.tenantId(), projectId);
+        return service.list(
+                user.tenantId(), projectId, user.userId(), user.role());
     }
 
     @DeleteMapping("/{userId}")
@@ -49,7 +61,7 @@ class ProjectAssignmentController {
             @CurrentUser AuthenticatedUser user,
             @PathVariable UUID projectId,
             @PathVariable UUID userId) {
-        user.requireAdmin();
-        service.unassign(user.tenantId(), projectId, userId);
+        service.unassign(
+                user.tenantId(), projectId, userId, user.userId(), user.role());
     }
 }

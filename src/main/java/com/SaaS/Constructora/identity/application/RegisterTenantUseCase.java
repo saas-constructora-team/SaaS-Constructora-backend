@@ -56,8 +56,11 @@ public class RegisterTenantUseCase {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        Tenant tenant = tenantRepository.save(
-                new Tenant(UUID.randomUUID(), request.companyName().trim(), slug, now));
+        Tenant tenant = tenantRepository.save(new Tenant(
+                UUID.randomUUID(), request.companyName().trim(), slug,
+                normalize(request.tradeName()), normalize(request.taxId()),
+                normalize(request.contactPhone()), normalize(request.address()),
+                normalize(request.companyEmail()), now));
 
         User admin = userRepository.save(new User(
                 UUID.randomUUID(), email, request.adminFullName().trim(),
@@ -70,5 +73,14 @@ public class RegisterTenantUseCase {
 
         String token = jwtService.generateToken(admin, membership);
         return RegisterTenantResponse.from(token, jwtService.getTokenTtlSeconds(), tenant, admin, membership);
+    }
+
+    /** Normaliza los datos opcionales de la empresa: recorta y convierte vacíos en null. */
+    private static String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

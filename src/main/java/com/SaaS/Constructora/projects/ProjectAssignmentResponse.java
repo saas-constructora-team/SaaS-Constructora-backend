@@ -5,6 +5,11 @@ import com.SaaS.Constructora.identity.application.UserSummary;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Vista de una asignación de proyecto. {@code userRole} es el rol del usuario
+ * en la empresa ({@code ADMIN}/{@code MEMBER}) y {@code projectRole} es su
+ * rol dentro del proyecto ({@code LEAD}/{@code MEMBER}).
+ */
 public record ProjectAssignmentResponse(
     UUID id,
     UUID projectId,
@@ -12,6 +17,7 @@ public record ProjectAssignmentResponse(
     String userFullName,
     String userEmail,
     String userRole,
+    ProjectRole projectRole,
     LocalDateTime assignedAt
 ) {
     static ProjectAssignmentResponse from(ProjectAssignment assignment, UserSummary user) {
@@ -22,6 +28,7 @@ public record ProjectAssignmentResponse(
                 user != null ? user.fullName() : null,
                 user != null ? user.email() : null,
                 user != null ? user.role().name() : null,
+                assignment.getRole(),
                 assignment.getAssignedAt());
     }
 }
