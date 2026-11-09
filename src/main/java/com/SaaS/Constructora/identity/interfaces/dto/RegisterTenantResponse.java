@@ -12,9 +12,24 @@ public record RegisterTenantResponse(
     TenantResponse tenant,
     LoginResponse.UserResponse user
 ) {
-    public record TenantResponse(UUID id, String name, String slug) {
+    public record TenantResponse(
+        UUID id,
+        String name,
+        String slug,
+        String tradeName,
+        String taxId,
+        String contactPhone,
+        String address,
+        String companyEmail
+    ) {
+        /** Compatibilidad: respuestas que solo necesitan la identificación básica del tenant. */
+        public TenantResponse(UUID id, String name, String slug) {
+            this(id, name, slug, null, null, null, null, null);
+        }
+
         static TenantResponse from(Tenant t) {
-            return new TenantResponse(t.getId(), t.getName(), t.getSlug());
+            return new TenantResponse(t.getId(), t.getName(), t.getSlug(), t.getTradeName(),
+                    t.getTaxId(), t.getContactPhone(), t.getAddress(), t.getCompanyEmail());
         }
     }
 

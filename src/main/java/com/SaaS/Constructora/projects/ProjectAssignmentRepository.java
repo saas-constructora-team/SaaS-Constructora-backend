@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 interface ProjectAssignmentRepository extends JpaRepository<ProjectAssignment, UUID> {
@@ -13,6 +14,9 @@ interface ProjectAssignmentRepository extends JpaRepository<ProjectAssignment, U
             UUID tenantId, UUID projectId);
 
     List<ProjectAssignment> findByTenantId(UUID tenantId);
+
+    Optional<ProjectAssignment> findByTenantIdAndProjectIdAndUserId(
+            UUID tenantId, UUID projectId, UUID userId);
 
     boolean existsByTenantIdAndProjectIdAndUserId(UUID tenantId, UUID projectId, UUID userId);
 

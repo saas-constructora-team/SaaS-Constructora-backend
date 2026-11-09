@@ -43,7 +43,9 @@ class ProjectAssignmentServiceTest {
         when(repository.save(any(ProjectAssignment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ProjectAssignmentResponse response = service.assign(tenantId, projectId, userId);
+        ProjectAssignmentResponse response = service.assign(
+                tenantId, projectId, userId, ProjectRole.MEMBER,
+                UUID.randomUUID(), Role.ADMIN);
 
         verify(projectService).ensureBelongsToTenant(projectId, tenantId);
         verify(userQueryService).ensureBelongsToTenant(userId, tenantId);
@@ -66,7 +68,8 @@ class ProjectAssignmentServiceTest {
                 .thenReturn(true);
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> service.assign(tenantId, projectId, userId));
+                () -> service.assign(tenantId, projectId, userId, ProjectRole.MEMBER,
+                        UUID.randomUUID(), Role.ADMIN));
 
         assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
         verify(repository, never()).save(any(ProjectAssignment.class));
@@ -81,7 +84,8 @@ class ProjectAssignmentServiceTest {
                 .when(projectService).ensureBelongsToTenant(projectId, tenantId);
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> service.assign(tenantId, projectId, userId));
+                () -> service.assign(tenantId, projectId, userId, ProjectRole.MEMBER,
+                        UUID.randomUUID(), Role.ADMIN));
 
         assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
         verifyNoInteractions(userQueryService);
@@ -98,7 +102,8 @@ class ProjectAssignmentServiceTest {
                         "Usuario no encontrado"));
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> service.assign(tenantId, projectId, userId));
+                () -> service.assign(tenantId, projectId, userId, ProjectRole.MEMBER,
+                        UUID.randomUUID(), Role.ADMIN));
 
         assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
         verify(repository, never()).save(any(ProjectAssignment.class));
@@ -116,7 +121,8 @@ class ProjectAssignmentServiceTest {
         when(repository.findByTenantIdAndProjectIdOrderByAssignedAtAsc(tenantId, projectId))
                 .thenReturn(List.of(assignment));
 
-        List<ProjectAssignmentResponse> response = service.list(tenantId, projectId);
+        List<ProjectAssignmentResponse> response = service.list(
+                tenantId, projectId, UUID.randomUUID(), Role.ADMIN);
 
         verify(projectService).ensureBelongsToTenant(projectId, tenantId);
         assertEquals(1, response.size());
@@ -132,7 +138,8 @@ class ProjectAssignmentServiceTest {
                 .when(projectService).ensureBelongsToTenant(projectId, tenantId);
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> service.list(tenantId, projectId));
+                () -> service.list(
+                        tenantId, projectId, UUID.randomUUID(), Role.ADMIN));
 
         assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
         verifyNoInteractions(repository);
@@ -144,7 +151,7 @@ class ProjectAssignmentServiceTest {
         UUID projectId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-        service.unassign(tenantId, projectId, userId);
+        service.unassign(tenantId, projectId, userId, UUID.randomUUID(), Role.ADMIN);
 
         verify(projectService).ensureBelongsToTenant(projectId, tenantId);
         verify(userQueryService).ensureBelongsToTenant(userId, tenantId);
@@ -159,7 +166,7 @@ class ProjectAssignmentServiceTest {
         when(repository.deleteByTenantIdAndProjectIdAndUserId(tenantId, projectId, userId))
                 .thenReturn(0L);
 
-        service.unassign(tenantId, projectId, userId);
+        service.unassign(tenantId, projectId, userId, UUID.randomUUID(), Role.ADMIN);
 
         verify(repository).deleteByTenantIdAndProjectIdAndUserId(tenantId, projectId, userId);
     }

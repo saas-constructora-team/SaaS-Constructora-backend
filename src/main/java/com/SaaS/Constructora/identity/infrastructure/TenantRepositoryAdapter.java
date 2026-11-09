@@ -26,11 +26,15 @@ class TenantRepositoryAdapter implements TenantRepository {
     @Override
     public Tenant save(Tenant tenant) {
         TenantJpaEntity saved = repository.save(new TenantJpaEntity(
-                tenant.getId(), tenant.getName(), tenant.getSlug(), tenant.getCreatedAt()));
+                tenant.getId(), tenant.getName(), tenant.getSlug(), tenant.getTradeName(),
+                tenant.getTaxId(), tenant.getContactPhone(), tenant.getAddress(),
+                tenant.getCompanyEmail(), tenant.getCreatedAt()));
         return toDomain(saved);
     }
 
     private static Tenant toDomain(TenantJpaEntity e) {
-        return new Tenant(e.getId(), e.getName(), e.getSlug(), e.getCreatedAt());
+        return new Tenant(e.getId(), e.getName(), e.getSlug(), e.getTradeName(),
+                e.getTaxId(), e.getContactPhone(), e.getAddress(), e.getCompanyEmail(),
+                e.getCreatedAt());
     }
 }
