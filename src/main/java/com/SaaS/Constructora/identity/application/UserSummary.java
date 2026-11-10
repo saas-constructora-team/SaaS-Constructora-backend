@@ -16,10 +16,16 @@ public record UserSummary(
         String email,
         String fullName,
         Role role,
-        boolean active
+        boolean active,
+        boolean canCreatePersonnel
 ) {
+    /** Constructor conservado para los consumidores que no necesitan el permiso. */
+    public UserSummary(UUID id, String email, String fullName, Role role, boolean active) {
+        this(id, email, fullName, role, active, role.canCreatePersonnel());
+    }
+
     public static UserSummary from(User user, Membership membership) {
         return new UserSummary(user.getId(), user.getEmail(), user.getFullName(),
-                membership.getRole(), user.isActive());
+                membership.getRole(), user.isActive(), membership.canCreatePersonnel());
     }
 }

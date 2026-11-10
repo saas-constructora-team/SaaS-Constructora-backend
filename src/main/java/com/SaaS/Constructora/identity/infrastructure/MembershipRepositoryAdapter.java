@@ -34,7 +34,8 @@ class MembershipRepositoryAdapter implements MembershipRepository {
     public void save(Membership membership) {
         repository.save(new MembershipJpaEntity(
                 membership.getId(), membership.getUserId(), membership.getTenantId(),
-                membership.getRole(), membership.isActive(), membership.getCreatedAt()));
+                membership.getRole(), membership.isActive(),
+                membership.isPersonnelCreationAllowed(), membership.getCreatedAt()));
     }
 
     @Override
@@ -43,6 +44,7 @@ class MembershipRepositoryAdapter implements MembershipRepository {
     }
 
     private Membership toDomain(MembershipJpaEntity e) {
-        return new Membership(e.getId(), e.getUserId(), e.getTenantId(), e.getRole(), e.isActive(), e.getCreatedAt());
+        return new Membership(e.getId(), e.getUserId(), e.getTenantId(), e.getRole(),
+                e.isActive(), e.isCanCreatePersonnel(), e.getCreatedAt());
     }
 }

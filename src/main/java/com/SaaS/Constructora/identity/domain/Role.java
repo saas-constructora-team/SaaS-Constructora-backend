@@ -28,6 +28,15 @@ public enum Role {
     }
 
     /**
+     * Los ADMIN siempre pueden crear personal. Un MEMBER puede hacerlo solo
+     * si un ADMIN le concedió el permiso explícito en su membresía
+     * (ver {@link Membership#canCreatePersonnel()}).
+     */
+    public boolean canCreatePersonnel() {
+        return isAdmin();
+    }
+
+    /**
      * Solo ADMIN puede eliminar proyectos. Los MEMBER asignados pueden
      * consultarlos y editarlos, pero no borrarlos.
      */
