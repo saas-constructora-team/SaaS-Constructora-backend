@@ -13,7 +13,8 @@ import java.util.UUID;
 /**
  * Caso de uso de administración de permisos dentro de una empresa.
  * Un ADMIN habilita o deshabilita los permisos de un usuario cambiando su rol
- * entre ADMIN y MEMBER. El tenant siempre proviene del token del solicitante.
+ * entre ADMIN y MEMBER, o concediendo el permiso puntual de creación de
+ * personal a un MEMBER. El tenant siempre proviene del token del solicitante.
  */
 @Service
 public class PermissionManagementUseCase {
@@ -39,21 +40,56 @@ public class PermissionManagementUseCase {
         return changeRole(tenantId, userId, Role.MEMBER);
     }
 
+    /** Habilita a un MEMBER para crear personal de la empresa. */
+    @Transactional
+    public UserSummary enablePersonnelCreation(UUID tenantId, UUID userId) {
+        return changePersonnelCreation(tenantId, userId, true);
+    }
+
+    /** Revoca el permiso de creación de personal de un MEMBER. */
+    @Transactional
+    public UserSummary disablePersonnelCreation(UUID tenantId, UUID userId) {
+        return changePersonnelCreation(tenantId, userId, false);
+    }
+
     private UserSummary changeRole(UUID tenantId, UUID userId, Role targetRole) {
         // Valida que el usuario exista y pertenezca al tenant del solicitante.
         UserSummary target = userQueryService.ensureBelongsToTenant(userId, tenantId);
 
-        Membership membership = membershipRepository
-                .findActiveByUserIdAndTenantId(userId, tenantId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        Membership membership = requireMembership(tenantId, userId);
 
         // La operación es idempotente: si ya tiene el rol pedido no se persiste nada.
         if (membership.getRole() != targetRole) {
-            membershipRepository.save(membership.withRole(targetRole));
+            membership = membership.withRole(targetRole);
+            membershipRepository.save(membership);
         }
 
+        return summaryOf(target, membership);
+    }
+
+    private UserSummary changePersonnelCreation(UUID tenantId, UUID userId, boolean allowed) {
+        // Valida que el usuario exista y pertenezca al tenant del solicitante.
+        UserSummary target = userQueryService.ensureBelongsToTenant(userId, tenantId);
+
+        Membership membership = requireMembership(tenantId, userId);
+
+        // La operación es idempotente: si el permiso ya tiene el valor pedido no se persiste nada.
+        if (membership.isPersonnelCreationAllowed() != allowed) {
+            membership = membership.withPersonnelCreationPermission(allowed);
+            membershipRepository.save(membership);
+        }
+
+        return summaryOf(target, membership);
+    }
+
+    private Membership requireMembership(UUID tenantId, UUID userId) {
+        return membershipRepository.findActiveByUserIdAndTenantId(userId, tenantId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+    }
+
+    private static UserSummary summaryOf(UserSummary target, Membership membership) {
         return new UserSummary(target.id(), target.email(), target.fullName(),
-                targetRole, target.active());
+                membership.getRole(), target.active(), membership.canCreatePersonnel());
     }
 }

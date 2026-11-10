@@ -9,10 +9,11 @@ public record UserResponse(
         String email,
         String fullName,
         String role,
-        boolean active
+        boolean active,
+        boolean canCreatePersonnel
 ) {
     public static UserResponse from(UserSummary user) {
         return new UserResponse(user.id(), user.email(), user.fullName(),
-                user.role().name(), user.active());
+                user.role().name(), user.active(), user.canCreatePersonnel());
     }
 }

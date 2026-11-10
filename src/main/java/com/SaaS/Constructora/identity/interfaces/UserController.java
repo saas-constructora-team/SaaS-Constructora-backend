@@ -59,4 +59,22 @@ class UserController {
         user.requireAdmin();
         return UserResponse.from(permissionManagementUseCase.disable(user.tenantId(), userId));
     }
+
+    /** Habilita a un miembro para crear y gestionar el personal de la empresa. */
+    @PostMapping("/{userId}/personnel-creation/enable")
+    UserResponse enablePersonnelCreation(@CurrentUser AuthenticatedUser user,
+                                         @PathVariable UUID userId) {
+        user.requireAdmin();
+        return UserResponse.from(
+                permissionManagementUseCase.enablePersonnelCreation(user.tenantId(), userId));
+    }
+
+    /** Revoca el permiso de creación y gestión de personal del usuario indicado. */
+    @PostMapping("/{userId}/personnel-creation/disable")
+    UserResponse disablePersonnelCreation(@CurrentUser AuthenticatedUser user,
+                                          @PathVariable UUID userId) {
+        user.requireAdmin();
+        return UserResponse.from(
+                permissionManagementUseCase.disablePersonnelCreation(user.tenantId(), userId));
+    }
 }

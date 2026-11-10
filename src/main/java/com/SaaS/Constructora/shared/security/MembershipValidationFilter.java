@@ -3,7 +3,7 @@ package com.SaaS.Constructora.shared.security;
 import com.SaaS.Constructora.shared.api.ApiError;
 import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
 import com.SaaS.Constructora.identity.domain.Membership;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
