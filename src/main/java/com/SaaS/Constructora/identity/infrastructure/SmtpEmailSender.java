@@ -46,6 +46,13 @@ class SmtpEmailSender implements EmailSender {
         send(toEmail, "¡Bienvenido a Constructora!", EmailTemplates.welcome(recipientName, companyName));
     }
 
+    @Override
+    public void sendInvitationEmail(String toEmail, String recipientName, String companyName,
+                                    String inviteLink, long expiresInHours) {
+        send(toEmail, "Invitación a " + companyName,
+                EmailTemplates.invitation(recipientName, companyName, inviteLink, expiresInHours));
+    }
+
     private void send(String toEmail, String subject, String html) {
         if (!StringUtils.hasText(from)) {
             log.error("MAIL_USERNAME/MAIL_FROM no configurado: no se puede enviar \"{}\" a {}", subject, toEmail);

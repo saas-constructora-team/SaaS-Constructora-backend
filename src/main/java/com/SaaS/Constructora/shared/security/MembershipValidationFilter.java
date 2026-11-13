@@ -75,7 +75,9 @@ public class MembershipValidationFilter extends OncePerRequestFilter {
         Membership membership;
         try {
             membership = membershipRepository
-                    .findActiveByUserIdAndTenantId(user.userId(), user.tenantId())
+                    .findActiveByUserId(user.userId())
+                    .stream()
+                    .findFirst()
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.FORBIDDEN,
                             "Usuario no tiene membresía activa en esta empresa"));

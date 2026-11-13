@@ -1,6 +1,9 @@
 package com.SaaS.Constructora.identity.interfaces;
 
+import com.SaaS.Constructora.identity.application.AcceptInvitationUseCase;
 import com.SaaS.Constructora.identity.application.GoogleAuthUseCase;
+import com.SaaS.Constructora.identity.application.InvitationPreview;
+import com.SaaS.Constructora.identity.application.InvitationQueryService;
 import com.SaaS.Constructora.identity.application.LoginUseCase;
 import com.SaaS.Constructora.identity.application.RegisterTenantUseCase;
 import com.SaaS.Constructora.identity.application.RequestPasswordResetUseCase;
@@ -22,6 +25,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,6 +51,12 @@ class AuthControllerTest {
 
     @MockitoBean
     private ResetPasswordUseCase resetPasswordUseCase;
+
+    @MockitoBean
+    private AcceptInvitationUseCase acceptInvitationUseCase;
+
+    @MockitoBean
+    private InvitationQueryService invitationQueryService;
 
     @Test
     void loginConCredenciasValidasDevuelve200YToken() throws Exception {
@@ -234,6 +244,64 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"malo\",\"newPassword\":\"NuevaClave123\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void previewDeInvitacionValidaDevuelveDatosDelTenant() throws Exception {
+        when(invitationQueryService.preview("token-valido"))
+                .thenReturn(new InvitationPreview("Constructora Demo", "obrero@demo.com",
+                        java.time.LocalDateTime.of(2026, 12, 1, 10, 0)));
+
+        mockMvc.perform(get("/api/auth/invitations/token-valido"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.companyName").value("Constructora Demo"))
+                .andExpect(jsonPath("$.email").value("obrero@demo.com"))
+                .andExpect(jsonPath("$.expiresAt").value("2026-12-01T10:00:00"));
+    }
+
+    @Test
+    void previewDeInvitacionInvalidaDevuelve400() throws Exception {
+        when(invitationQueryService.preview("token-malo"))
+                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "La invitación no existe, expiró o ya fue utilizada"));
+
+        mockMvc.perform(get("/api/auth/invitations/token-malo"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void aceptarInvitacionValidaDevuelve200YSesion() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        LoginResponse response = new LoginResponse("jwt-token", "Bearer", 3600,
+                new LoginResponse.UserResponse(userId, tenantId, "obrero@demo.com",
+                        "Obrero Demo", Role.WORKER.name()));
+        when(acceptInvitationUseCase.accept(any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/invitations/accept")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"token-valido\",\"password\":\"NuevaClave123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("jwt-token"))
+                .andExpect(jsonPath("$.user.email").value("obrero@demo.com"))
+                .andExpect(jsonPath("$.user.role").value("WORKER"));
+    }
+
+    @Test
+    void aceptarInvitacionSinTokenDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/invitations/accept")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void aceptarInvitacionConPasswordCortaDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/invitations/accept")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"token-valido\",\"password\":\"corta\"}"))
                 .andExpect(status().isBadRequest());
     }
 }

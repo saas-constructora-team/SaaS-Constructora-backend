@@ -13,6 +13,12 @@ public interface MembershipRepository {
 
     List<Membership> findActiveByUserId(UUID userId);
 
+    /** Membresía del usuario en el tenant sin importar su estado (ACTIVE o INVITED). */
+    Optional<Membership> findByUserIdAndTenantId(UUID userId, UUID tenantId);
+
+    /** Membresía por id y tenant; usado por la aceptación/reenvío de invitaciones. */
+    Optional<Membership> findByIdAndTenantId(UUID id, UUID tenantId);
+
     boolean existsByUserIdAndTenantIdAndRoleAndActiveTrue(UUID userId, UUID tenantId, Role role);
 
     void save(Membership membership);

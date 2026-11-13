@@ -35,4 +35,38 @@ class MembershipTest {
         Membership updated = membership(Role.MEMBER, true).withRole(Role.ADMIN);
         assertTrue(updated.isPersonnelCreationAllowed());
     }
+
+    @Test
+    void unaMembresiaInvitadaNoDaAcceso() {
+        Membership invited = Membership.invited(UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), Role.WORKER, false, LocalDateTime.now());
+
+        assertTrue(invited.isInvited());
+        assertFalse(invited.isAccessible());
+    }
+
+    @Test
+    void activarUnaMembresiaInvitadaLeDaAcceso() {
+        Membership activated = Membership.invited(UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), Role.WORKER, false, LocalDateTime.now()).activate();
+
+        assertFalse(activated.isInvited());
+        assertTrue(activated.isAccessible());
+    }
+
+    @Test
+    void unaMembresiaActivaPeroDeshabilitadaNoDaAcceso() {
+        Membership disabled = new Membership(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                Role.WORKER, false, LocalDateTime.now());
+
+        assertFalse(disabled.isAccessible());
+    }
+
+    @Test
+    void volverAInvitarDejaLaMembresiaSinAcceso() {
+        Membership reinvited = membership(Role.WORKER, false).reinvited();
+
+        assertTrue(reinvited.isInvited());
+        assertFalse(reinvited.isAccessible());
+    }
 }

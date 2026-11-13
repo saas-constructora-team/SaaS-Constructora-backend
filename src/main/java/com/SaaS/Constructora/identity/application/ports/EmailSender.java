@@ -13,4 +13,14 @@ public interface EmailSender {
 
 
     void sendPasswordResetEmail(String toEmail, String recipientName, String resetLink);
+
+    /**
+     * Correo con el enlace para aceptar una invitación a una empresa.
+     * El remitente no conoce ni genera la contraseña: la persona la define al
+     * consumir el token.
+     */
+    default void sendInvitationEmail(String toEmail, String recipientName, String companyName,
+                                     String inviteLink, long expiresInHours) {
+        // Sin implementación por defecto: el envío es opcional para adaptadores externos.
+    }
 }

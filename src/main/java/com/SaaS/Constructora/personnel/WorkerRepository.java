@@ -16,6 +16,9 @@ interface WorkerRepository extends JpaRepository<Worker, UUID> {
                                                              DocumentType documentType,
                                                              String documentNumber);
 
+    java.util.Optional<Worker> findByTenantIdAndDocumentTypeAndDocumentNumber(
+            UUID tenantId, DocumentType documentType, String documentNumber);
+
     boolean existsByTenantIdAndPositionName(UUID tenantId, String positionName);
 
     /** Renombra el cargo en todos los trabajadores del tenant que lo tenían. */

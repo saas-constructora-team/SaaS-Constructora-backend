@@ -1,12 +1,18 @@
 package com.SaaS.Constructora.personnel;
 
 import com.SaaS.Constructora.identity.application.PersonnelPermissionService;
+import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
+import com.SaaS.Constructora.identity.application.ports.UserRepository;
+import com.SaaS.Constructora.identity.domain.Membership;
+import com.SaaS.Constructora.identity.domain.User;
 import com.SaaS.Constructora.projects.ProjectService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +20,8 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -29,13 +37,24 @@ class PersonnelServiceTest {
     private final ProjectService projectService = mock(ProjectService.class);
     private final PersonnelPermissionService permissionService =
             mock(PersonnelPermissionService.class);
+    private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+    private final UserRepository userRepository = mock(UserRepository.class);
+    private final MembershipRepository membershipRepository = mock(MembershipRepository.class);
     private final PersonnelService service =
-            new PersonnelService(repository, positionRepository, projectService, permissionService);
+            new PersonnelService(repository, positionRepository, projectService, permissionService, passwordEncoder, userRepository, membershipRepository);
+
+private static User anyUser() {
+        return new User(UUID.randomUUID(), "ana@constructora.com",
+                "Ana Gómez Pérez", "hashed-pw", true, LocalDateTime.now());
+    }
 
     @BeforeEach
     void setUp() {
         when(positionRepository.save(any(WorkerPosition.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed-pw");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doAnswer(invocation -> null).when(membershipRepository).save(any(Membership.class));
     }
 
     private static CreateWorkerRequest request(UUID projectId) {
@@ -45,6 +64,7 @@ class PersonnelServiceTest {
                 "1020304050",
                 "+57 300 123 4567",
                 "ana@constructora.com",
+                "Admin123!",
                 "Carlos Gómez",
                 "+57 300 765 4321",
                 "Encargado de obra",
@@ -153,8 +173,9 @@ class PersonnelServiceTest {
     void listaElPersonalDeLaEmpresa() {
         UUID tenantId = UUID.randomUUID();
         UUID actorId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Worker worker = new Worker(tenantId, "Ana Gómez", DocumentType.NATIONAL_ID,
-                "123", "300", null, "Carlos", "301", "Operario", null);
+                "123", "300", null, "pw-hash", userId, "Carlos", "301", "Operario", null);
         when(repository.findByTenantIdOrderByCreatedAtDesc(tenantId))
                 .thenReturn(List.of(worker));
 

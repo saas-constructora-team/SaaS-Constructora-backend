@@ -31,7 +31,8 @@ class UserRepositoryAdapter implements UserRepository {
     @Override
     public List<User> findByTenantIdOrderByFullNameAsc(UUID tenantId) {
         // Buscar usuarios que tengan membresía activa en el tenant
-        return membershipRepository.findByTenantIdAndActiveTrue(tenantId).stream()
+        return membershipRepository.findByTenantIdAndActiveTrue(
+                        tenantId, com.SaaS.Constructora.identity.domain.MembershipStatus.ACTIVE).stream()
                 .map(m -> repository.findById(m.getUserId()).orElse(null))
                 .filter(java.util.Objects::nonNull)
                 .map(UserRepositoryAdapter::toDomain)
@@ -56,6 +57,15 @@ class UserRepositoryAdapter implements UserRepository {
     public void updatePasswordHash(UUID userId, String passwordHash) {
         repository.findById(userId).ifPresent(e -> {
             e.setPasswordHash(passwordHash);
+            repository.save(e);
+        });
+    }
+
+    @Override
+    public void updatePasswordHashAndActivate(UUID userId, String passwordHash) {
+        repository.findById(userId).ifPresent(e -> {
+            e.setPasswordHash(passwordHash);
+            e.setActive(true);
             repository.save(e);
         });
     }

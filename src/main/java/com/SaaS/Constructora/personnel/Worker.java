@@ -47,6 +47,16 @@ public class Worker {
     @Column(length = 255)
     private String email;
 
+    /* Contraseña del trabajador: hash BCrypt que permite el inicio de
+     * sesión de la cuenta del personal. Se almacena hasheado, nunca en texto
+     * plano. En el flujo de invitación queda NULL: la contraseña vive
+     * únicamente en users.password_hash. */
+    @Column(name = "password_hash", nullable = true, length = 100)
+    private String passwordHash;
+
+    @Column(name = "user_id", nullable = true, updatable = false, length = 36)
+    private UUID userId;
+
     @Column(name = "emergency_contact_name", nullable = false, length = 150)
     private String emergencyContactName;
 
@@ -72,8 +82,9 @@ public class Worker {
     protected Worker() { } // requerido por JPA
 
     public Worker(UUID tenantId, String fullName, DocumentType documentType, String documentNumber,
-                  String phone, String email, String emergencyContactName,
-                  String emergencyContactPhone, String positionName, UUID projectId) {
+                  String phone, String email, String passwordHash, UUID userId,
+                  String emergencyContactName, String emergencyContactPhone, String positionName,
+                  UUID projectId) {
         this.id = UUID.randomUUID();
         this.tenantId = tenantId;
         this.fullName = fullName;
@@ -81,6 +92,8 @@ public class Worker {
         this.documentNumber = documentNumber;
         this.phone = phone;
         this.email = email;
+        this.passwordHash = passwordHash;
+        this.userId = userId;
         this.emergencyContactName = emergencyContactName;
         this.emergencyContactPhone = emergencyContactPhone;
         this.positionName = positionName;
@@ -96,14 +109,23 @@ public class Worker {
     }
 
     public UUID getId() { return id; }
+    public UUID getUserId() { return userId; }
+
+    /** Vincula un worker preexistente con la identidad que acaba de aceptar la invitación. */
+    public void linkToUser(UUID userId) {
+        this.userId = userId;
+    }
+
     public UUID getTenantId() { return tenantId; }
     public String getFullName() { return fullName; }
     public DocumentType getDocumentType() { return documentType; }
     public String getDocumentNumber() { return documentNumber; }
     public String getPhone() { return phone; }
     public String getEmail() { return email; }
+    public String getPasswordHash() { return passwordHash; }
     public String getEmergencyContactName() { return emergencyContactName; }
     public String getEmergencyContactPhone() { return emergencyContactPhone; }
+
     public String getPositionName() { return positionName; }
     public UUID getProjectId() { return projectId; }
     public boolean isActive() { return active; }

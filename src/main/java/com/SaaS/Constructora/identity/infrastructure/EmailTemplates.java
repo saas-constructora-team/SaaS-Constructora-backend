@@ -22,4 +22,15 @@ final class EmailTemplates {
                 <p>Puedes iniciar sesión en cualquier momento con tu cuenta de Google.</p>
                 """.formatted(recipientName, companyName);
     }
+
+    static String invitation(String recipientName, String companyName, String inviteLink,
+                             long expiresInHours) {
+        return """
+                <p>Hola %s,</p>
+                <p><strong>%s</strong> te invitó a formar parte de su equipo en Constructora.</p>
+                <p><a href="%s">Aceptar invitación</a></p>
+                <p>El enlace caduca en %d horas. Si no esperabas esta invitación, ignora este correo.</p>
+                <p>Si aún no tienes cuenta, en el mismo enlace podrás definir tu contraseña.</p>
+                """.formatted(recipientName, companyName, inviteLink, expiresInHours);
+    }
 }
