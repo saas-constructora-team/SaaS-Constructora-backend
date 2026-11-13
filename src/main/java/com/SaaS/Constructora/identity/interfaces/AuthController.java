@@ -1,13 +1,17 @@
 package com.SaaS.Constructora.identity.interfaces;
 
+import com.SaaS.Constructora.identity.application.AcceptInvitationUseCase;
 import com.SaaS.Constructora.identity.application.GoogleAuthUseCase;
+import com.SaaS.Constructora.identity.application.InvitationQueryService;
 import com.SaaS.Constructora.identity.application.LoginUseCase;
 import com.SaaS.Constructora.identity.application.RegisterTenantUseCase;
 import com.SaaS.Constructora.identity.application.RequestPasswordResetUseCase;
 import com.SaaS.Constructora.identity.application.ResetPasswordUseCase;
+import com.SaaS.Constructora.identity.interfaces.dto.AcceptInvitationRequest;
 import com.SaaS.Constructora.identity.interfaces.dto.ForgotPasswordRequest;
 import com.SaaS.Constructora.identity.interfaces.dto.GoogleAuthRequest;
 import com.SaaS.Constructora.identity.interfaces.dto.GoogleAuthResponse;
+import com.SaaS.Constructora.identity.interfaces.dto.InvitationPreviewResponse;
 import com.SaaS.Constructora.identity.interfaces.dto.LoginRequest;
 import com.SaaS.Constructora.identity.interfaces.dto.LoginResponse;
 import com.SaaS.Constructora.identity.interfaces.dto.MessageResponse;
@@ -17,6 +21,8 @@ import com.SaaS.Constructora.identity.interfaces.dto.ResetPasswordRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,16 +37,22 @@ class AuthController {
     private final GoogleAuthUseCase googleAuthUseCase;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
     private final ResetPasswordUseCase resetPasswordUseCase;
+    private final AcceptInvitationUseCase acceptInvitationUseCase;
+    private final InvitationQueryService invitationQueryService;
 
     AuthController(LoginUseCase loginUseCase, RegisterTenantUseCase registerTenantUseCase,
                    GoogleAuthUseCase googleAuthUseCase,
                    RequestPasswordResetUseCase requestPasswordResetUseCase,
-                   ResetPasswordUseCase resetPasswordUseCase) {
+                   ResetPasswordUseCase resetPasswordUseCase,
+                   AcceptInvitationUseCase acceptInvitationUseCase,
+                   InvitationQueryService invitationQueryService) {
         this.loginUseCase = loginUseCase;
         this.registerTenantUseCase = registerTenantUseCase;
         this.googleAuthUseCase = googleAuthUseCase;
         this.requestPasswordResetUseCase = requestPasswordResetUseCase;
         this.resetPasswordUseCase = resetPasswordUseCase;
+        this.acceptInvitationUseCase = acceptInvitationUseCase;
+        this.invitationQueryService = invitationQueryService;
     }
 
     @PostMapping("/login")
@@ -74,5 +86,19 @@ class AuthController {
     ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         resetPasswordUseCase.reset(request.token(), request.newPassword());
         return ResponseEntity.ok(new MessageResponse("Contraseña actualizada correctamente."));
+    }
+
+    /** Previsualización pública de una invitación (sin autenticación). */
+    @GetMapping("/invitations/{token}")
+    ResponseEntity<InvitationPreviewResponse> previewInvitation(@PathVariable String token) {
+        return ResponseEntity.ok(
+                InvitationPreviewResponse.from(invitationQueryService.preview(token)));
+    }
+
+    /** Acepta la invitación y devuelve una sesión del tenant invitado. */
+    @PostMapping("/invitations/accept")
+    ResponseEntity<LoginResponse> acceptInvitation(
+            @Valid @RequestBody AcceptInvitationRequest request) {
+        return ResponseEntity.ok(acceptInvitationUseCase.accept(request));
     }
 }

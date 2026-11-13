@@ -54,6 +54,18 @@ class ResendEmailSender implements EmailSender {
                 EmailTemplates.welcome(recipientName, companyName));
     }
 
+    @Override
+    public void sendInvitationEmail(String toEmail, String recipientName, String companyName,
+                                    String inviteLink, long expiresInHours) {
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("RESEND_API_KEY no configurada. Enlace de invitación para {}: {}", toEmail, inviteLink);
+            return;
+        }
+
+        send(toEmail, "Invitación a " + companyName,
+                EmailTemplates.invitation(recipientName, companyName, inviteLink, expiresInHours));
+    }
+
     private void send(String toEmail, String subject, String html) {
         Resend resend = new Resend(apiKey);
         CreateEmailOptions email = CreateEmailOptions.builder()

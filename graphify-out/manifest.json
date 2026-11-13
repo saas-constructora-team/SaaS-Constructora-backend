@@ -126,9 +126,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/domain/Role.java": {
-    "mtime": 1794248112.6922562,
-    "seen": 1794249785.8577473,
-    "ast_hash": "16d19b785f8387251f2b73a96846403d",
+    "mtime": 1794364935.3612442,
+    "seen": 1794405955.3073165,
+    "ast_hash": "73ce4d9e37d98475d6f8991168abfffb",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/domain/Tenant.java": {
@@ -720,9 +720,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/CreateWorkerRequest.java": {
-    "mtime": 1794248182.6231108,
-    "seen": 1794249785.857805,
-    "ast_hash": "13970a4d9913f15d7c32a6feeb17c827",
+    "mtime": 1794349842.8210254,
+    "seen": 1794405955.307381,
+    "ast_hash": "f8fb75dda0fa3d6a11093e898cb635e4",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/DocumentType.java": {
@@ -732,39 +732,39 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/PersonnelController.java": {
-    "mtime": 1794248195.0029078,
-    "seen": 1794249785.8578088,
-    "ast_hash": "3bfad670ea6de2b04959d52a0255796d",
+    "mtime": 1794260787.834008,
+    "seen": 1794405955.3073854,
+    "ast_hash": "4d3eb3f173bb7e04d7cd52b692ff1e36",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/PersonnelService.java": {
-    "mtime": 1794248195.0029078,
-    "seen": 1794249785.8578105,
-    "ast_hash": "a0ad95c117c36a79cff11fcb3999f76a",
+    "mtime": 1794364919.4895031,
+    "seen": 1794405955.3073869,
+    "ast_hash": "acdac1ee0b18f9dcccfe4b7d7900c2ca",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/Worker.java": {
-    "mtime": 1794248182.6231108,
-    "seen": 1794249785.857812,
-    "ast_hash": "1fb7a73fc4cad181de0a63ab48c0264b",
+    "mtime": 1794364888.350008,
+    "seen": 1794405955.3073902,
+    "ast_hash": "99146984acb2df42e51cff716e6347da",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/WorkerPosition.java": {
-    "mtime": 1794248182.6231108,
-    "seen": 1794249785.8578134,
-    "ast_hash": "067ab5ab7ce30e4cfb879aaaf4202c8a",
+    "mtime": 1794260787.7860074,
+    "seen": 1794405955.307392,
+    "ast_hash": "e3bda8e7abae5a253090552c4d95af57",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/WorkerRepository.java": {
-    "mtime": 1794248182.6231108,
-    "seen": 1794249785.8578148,
-    "ast_hash": "7629524ffd847bd40a95fefd289698cf",
+    "mtime": 1794260787.8140078,
+    "seen": 1794405955.307398,
+    "ast_hash": "92874c378959cc0f7e01aee77afec02b",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/WorkerResponse.java": {
-    "mtime": 1794248182.6391106,
-    "seen": 1794249785.857816,
-    "ast_hash": "3aee89ade43ceb6080639334a93dd710",
+    "mtime": 1794260787.8220077,
+    "seen": 1794405955.3073997,
+    "ast_hash": "30231e8f69c4f7a7eefbcca91866b657",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/shared/api/ApiError.java": {
@@ -804,9 +804,9 @@
     "semantic_hash": ""
   },
   "src/test/java/com/SaaS/Constructora/personnel/PersonnelServiceTest.java": {
-    "mtime": 1794248216.614553,
-    "seen": 1794249785.8579211,
-    "ast_hash": "d61e592082ff4427028c98e061201d38",
+    "mtime": 1794365104.5024207,
+    "seen": 1794405955.3075151,
+    "ast_hash": "06d546126fa34d69744838d7786b1172",
     "semantic_hash": ""
   },
   "src/test/java/com/SaaS/Constructora/shared/security/JwtServiceTest.java": {
@@ -819,6 +819,78 @@
     "mtime": 1794247387.1118364,
     "seen": 1794249785.8579443,
     "ast_hash": "98c7b77a80fd4f18e56bfb3fb62905dd",
+    "semantic_hash": ""
+  },
+  "neon.ts": {
+    "mtime": 1794321244.8964748,
+    "seen": 1794405955.307261,
+    "ast_hash": "33a3fc5c7a21eae39181a323c511c1ce",
+    "semantic_hash": ""
+  },
+  "package.json": {
+    "mtime": 1794321248.5884008,
+    "seen": 1794405955.3072655,
+    "ast_hash": "1ab1e6a1aad23e1f7f67138786361102",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/personnel/CreateWorkerPositionRequest.java": {
+    "mtime": 1794260787.8220077,
+    "seen": 1794405955.307379,
+    "ast_hash": "9390de20992a6f15e1f198dd375c240e",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/personnel/UpdateWorkerPositionRequest.java": {
+    "mtime": 1794260787.8260078,
+    "seen": 1794405955.3073888,
+    "ast_hash": "71f51b5363048231efae6bedc12088d1",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/personnel/WorkerPositionRepository.java": {
+    "mtime": 1794260787.7860074,
+    "seen": 1794405955.3073936,
+    "ast_hash": "16ef9bce4fa3a5bc22944124283bd4dc",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/personnel/WorkerPositionResponse.java": {
+    "mtime": 1794257812.5295777,
+    "seen": 1794405955.307395,
+    "ast_hash": "1f420b727d76a015278d397bdebf271a",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/personnel/WorkerPositionService.java": {
+    "mtime": 1794260787.8140078,
+    "seen": 1794405955.3073967,
+    "ast_hash": "879c5b112d788808f43c3a9fc1d176ea",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/shared/config/NeonJdbcConfig.java": {
+    "mtime": 1794405576.0224628,
+    "seen": 1794405955.3074553,
+    "ast_hash": "bb677fbe490c02ebf32a096f61f5db29",
+    "semantic_hash": ""
+  },
+  "src/main/resources/db/migration/V14__create_worker_positions.sql": {
+    "mtime": 1794257952.9411294,
+    "seen": 1794405955.3074868,
+    "ast_hash": "5dec8e9369fc760ec2d6da4329e1935c",
+    "semantic_hash": ""
+  },
+  "src/main/resources/db/migration/V15__seed_worker_positions.sql": {
+    "mtime": 1794260787.834008,
+    "seen": 1794405955.3074882,
+    "ast_hash": "35d156c166fcbecac6ee4068d6273e66",
+    "semantic_hash": ""
+  },
+  "src/main/resources/db/migration/V16__add_password_hash_to_workers.sql": {
+    "mtime": 1794364943.6491084,
+    "seen": 1794405955.30749,
+    "ast_hash": "0ca9052fe49029b9cae87b0b07ffce7b",
+    "semantic_hash": ""
+  },
+  "src/test/java/com/SaaS/Constructora/personnel/WorkerPositionServiceTest.java": {
+    "mtime": 1794260801.6381216,
+    "seen": 1794405955.3075166,
+    "ast_hash": "93d02672ae08b967266058004b183adf",
     "semantic_hash": ""
   }
 }

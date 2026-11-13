@@ -2,7 +2,8 @@ package com.SaaS.Constructora.identity.domain;
 
 public enum Role {
     ADMIN,
-    MEMBER;
+    MEMBER,
+    WORKER;
 
     /** Rol con permisos de administración de la empresa. */
     public boolean isAdmin() {
@@ -31,6 +32,7 @@ public enum Role {
      * Los ADMIN siempre pueden crear personal. Un MEMBER puede hacerlo solo
      * si un ADMIN le concedió el permiso explícito en su membresía
      * (ver {@link Membership#canCreatePersonnel()}).
+     * WORKER nunca puede crear personal.
      */
     public boolean canCreatePersonnel() {
         return isAdmin();

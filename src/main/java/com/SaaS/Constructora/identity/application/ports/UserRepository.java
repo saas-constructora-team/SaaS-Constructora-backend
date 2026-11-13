@@ -21,4 +21,10 @@ public interface UserRepository {
 
     /** Actualiza únicamente el hash de contraseña del usuario indicado (HU-13). */
     void updatePasswordHash(java.util.UUID userId, String passwordHash);
+
+    /**
+     * Fija la contraseña de una cuenta creada como invitada y la activa.
+     * Es el paso de "claim" al aceptar una invitación.
+     */
+    void updatePasswordHashAndActivate(java.util.UUID userId, String passwordHash);
 }

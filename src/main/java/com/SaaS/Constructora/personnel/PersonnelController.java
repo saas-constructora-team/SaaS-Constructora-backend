@@ -2,6 +2,7 @@ package com.SaaS.Constructora.personnel;
 
 import com.SaaS.Constructora.shared.security.AuthenticatedUser;
 import com.SaaS.Constructora.shared.security.CurrentUser;
+import com.SaaS.Constructora.identity.application.ResendInvitationUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +29,38 @@ class PersonnelController {
 
     private final PersonnelService service;
     private final WorkerPositionService positionService;
+    private final InviteWorkerUseCase inviteWorkerUseCase;
+    private final ResendInvitationUseCase resendInvitationUseCase;
 
-    PersonnelController(PersonnelService service, WorkerPositionService positionService) {
+    PersonnelController(PersonnelService service, WorkerPositionService positionService,
+                        InviteWorkerUseCase inviteWorkerUseCase,
+                        ResendInvitationUseCase resendInvitationUseCase) {
         this.service = service;
         this.positionService = positionService;
+        this.inviteWorkerUseCase = inviteWorkerUseCase;
+        this.resendInvitationUseCase = resendInvitationUseCase;
+    }
+
+    /**
+     * Invita a un trabajador. No recibe contraseña: la persona la define al
+     * aceptar el enlace enviado a su correo.
+     */
+    @PostMapping("/invite")
+    ResponseEntity<InviteWorkerResponse> invite(
+            @CurrentUser AuthenticatedUser user,
+            @Valid @RequestBody InviteWorkerRequest request) {
+        InviteWorkerResponse response = inviteWorkerUseCase.invite(
+                user.tenantId(), user.userId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /** Reenvía la invitación pendiente de una membresía. */
+    @PostMapping("/invitations/{membershipId}/resend")
+    ResponseEntity<InviteWorkerResponse> resendInvitation(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable UUID membershipId) {
+        return ResponseEntity.ok(InviteWorkerResponse.from(
+                resendInvitationUseCase.resend(user.tenantId(), user.userId(), membershipId)));
     }
 
     /** Registra un nuevo trabajador en la empresa. */
