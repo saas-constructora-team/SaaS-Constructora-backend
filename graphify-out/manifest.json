@@ -42,9 +42,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/application/ResetPasswordUseCase.java": {
-    "mtime": 1793032011.4869246,
-    "seen": 1793545641.660491,
-    "ast_hash": "3380bdb0d1242514099c2039372f143b",
+    "mtime": 1794539793.5800147,
+    "seen": 1794539837.4882843,
+    "ast_hash": "6aacb88534f4d77d4e2cd09d0b6c7b12",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/application/TenantQueryService.java": {
@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/application/ports/EmailSender.java": {
-    "mtime": 1793032011.4869246,
-    "seen": 1793545641.6604977,
-    "ast_hash": "4b5d5e0f852f1280737e4d7cd02f3def",
+    "mtime": 1794462754.349419,
+    "seen": 1794539837.4883044,
+    "ast_hash": "a8684fd09e93bac49bb7b9dffeeec792",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/application/ports/ExternalIdentityRepository.java": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/application/ports/MembershipRepository.java": {
-    "mtime": 1793543783.8110645,
-    "seen": 1793545641.6605022,
-    "ast_hash": "aa27b13b8f9c33a1ade75f79320c03b1",
+    "mtime": 1794462754.3374193,
+    "seen": 1794539837.4883237,
+    "ast_hash": "e6a9c3273cb0dad6076aa18efab5d5ee",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/application/ports/PasswordResetTokenRepository.java": {
@@ -102,9 +102,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/application/ports/UserRepository.java": {
-    "mtime": 1793032011.4909246,
-    "seen": 1793545641.6605067,
-    "ast_hash": "1a433f31f1bf5e7d901e99450ab918a6",
+    "mtime": 1794462754.3374193,
+    "seen": 1794539837.4883385,
+    "ast_hash": "ed3c8d4f81e70acb6afca3d17c8ab844",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/domain/ExternalIdentity.java": {
@@ -114,9 +114,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/domain/Membership.java": {
-    "mtime": 1794248120.2961318,
-    "seen": 1794249785.8577435,
-    "ast_hash": "301f3845cd6e5f8ac9944e0fb3831fd3",
+    "mtime": 1794462748.077522,
+    "seen": 1794539837.488347,
+    "ast_hash": "9bc11584649ae090dae0b90a65bfe83c",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/domain/PasswordResetToken.java": {
@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/EmailTemplates.java": {
-    "mtime": 1793032011.4909246,
-    "seen": 1793545641.6605175,
-    "ast_hash": "a847b1a9f6ace12df5cc903145054da9",
+    "mtime": 1794462817.2603836,
+    "seen": 1794539837.4883804,
+    "ast_hash": "c4d32422af60eff4607c5fd6e51cc2d0",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/ExternalIdentityJpaEntity.java": {
@@ -174,21 +174,21 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/MembershipJpaEntity.java": {
-    "mtime": 1794248127.8240085,
-    "seen": 1794249785.8577607,
-    "ast_hash": "f4d4a93d64ce3428bf460caa913137aa",
+    "mtime": 1794462762.9972773,
+    "seen": 1794539837.4884193,
+    "ast_hash": "bbfc0ad58883940ce9424b17602540c1",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/MembershipJpaRepository.java": {
-    "mtime": 1793543975.90858,
-    "seen": 1793545641.6605265,
-    "ast_hash": "9a8fde715b7d0420d4a2dfa09216f9d9",
+    "mtime": 1794462762.9972773,
+    "seen": 1794539837.4884236,
+    "ast_hash": "e4eb1d6bdf4e583eca3a0b79c772605d",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/MembershipRepositoryAdapter.java": {
-    "mtime": 1794248134.1039057,
-    "seen": 1794249785.857764,
-    "ast_hash": "0d490bae0519eee6556904fb0626859a",
+    "mtime": 1794462763.0012772,
+    "seen": 1794539837.4884286,
+    "ast_hash": "1e2c49ed52c654d401baf74e1017de64",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/PasswordResetTokenJpaEntity.java": {
@@ -210,15 +210,15 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/ResendEmailSender.java": {
-    "mtime": 1793032011.4909246,
-    "seen": 1793545641.6605337,
-    "ast_hash": "45e62d8723c587924a3229c3e39433b9",
+    "mtime": 1794462817.2603836,
+    "seen": 1794539837.4884486,
+    "ast_hash": "5259cabe080a0dd69752bcfd8df11316",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/SmtpEmailSender.java": {
-    "mtime": 1793032011.4909246,
-    "seen": 1793545641.6605353,
-    "ast_hash": "4080c5e7ee24765fc51724841f743251",
+    "mtime": 1794462817.2603836,
+    "seen": 1794539837.4884534,
+    "ast_hash": "7c17fb9fd63b1ff4ff1622d2109f2017",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/TenantJpaEntity.java": {
@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/UserJpaEntity.java": {
-    "mtime": 1793543911.9587388,
-    "seen": 1793545641.6605413,
-    "ast_hash": "81c250994679718705ddc014478fca5f",
+    "mtime": 1794462774.089095,
+    "seen": 1794539837.4884746,
+    "ast_hash": "e31deabf80898981aebea370bcdb73f8",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/UserJpaRepository.java": {
@@ -252,15 +252,15 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/infrastructure/UserRepositoryAdapter.java": {
-    "mtime": 1793543960.8490884,
-    "seen": 1793545641.660544,
-    "ast_hash": "fdad555072a7c158849e73b3f86f2818",
+    "mtime": 1794462774.0930948,
+    "seen": 1794539837.4884849,
+    "ast_hash": "e7abff76dc47b80ef305bf33f1755dcf",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/interfaces/AuthController.java": {
-    "mtime": 1793032011.4909246,
-    "seen": 1793545641.6605484,
-    "ast_hash": "9a364742347ec9e7c3694f3d0a2bb3f8",
+    "mtime": 1794462810.5404944,
+    "seen": 1794539837.4884896,
+    "ast_hash": "a77a3cbdc9c0b908ed083916c293fd49",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/identity/interfaces/UserController.java": {
@@ -600,9 +600,9 @@
     "semantic_hash": ""
   },
   "src/test/java/com/SaaS/Constructora/identity/interfaces/AuthControllerTest.java": {
-    "mtime": 1793032011.4949245,
-    "seen": 1793545641.6606336,
-    "ast_hash": "381e140a39c0af85c1713495bf987026",
+    "mtime": 1794463024.1129339,
+    "seen": 1794539837.4889376,
+    "ast_hash": "609d6b8a8885b4654d764967148cce0d",
     "semantic_hash": ""
   },
   "src/test/java/com/SaaS/Constructora/projects/ProjectAssignmentIntegrationTest.java": {
@@ -654,9 +654,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/shared/security/MembershipValidationFilter.java": {
-    "mtime": 1794249555.360635,
-    "seen": 1794249785.8578784,
-    "ast_hash": "ca0c8381fca27c97605d2a4e798ed900",
+    "mtime": 1794462873.8754456,
+    "seen": 1794539837.4888039,
+    "ast_hash": "7fd5c2a552e73b0229ac3f2a195a9bdf",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/shared/security/TenantContext.java": {
@@ -732,21 +732,21 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/PersonnelController.java": {
-    "mtime": 1794260787.834008,
-    "seen": 1794405955.3073854,
-    "ast_hash": "4d3eb3f173bb7e04d7cd52b692ff1e36",
+    "mtime": 1794462841.3679848,
+    "seen": 1794539837.4885876,
+    "ast_hash": "2ccbb04736da459980ff52614034876b",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/PersonnelService.java": {
-    "mtime": 1794364919.4895031,
-    "seen": 1794405955.3073869,
-    "ast_hash": "acdac1ee0b18f9dcccfe4b7d7900c2ca",
+    "mtime": 1794463506.3166723,
+    "seen": 1794539837.4885921,
+    "ast_hash": "0434ceb08359fd0d7caf2d0fa817b73b",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/Worker.java": {
-    "mtime": 1794364888.350008,
-    "seen": 1794405955.3073902,
-    "ast_hash": "99146984acb2df42e51cff716e6347da",
+    "mtime": 1794462822.428298,
+    "seen": 1794539837.4886026,
+    "ast_hash": "b077719fab21fc403697dfb0b7260f45",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/WorkerPosition.java": {
@@ -756,9 +756,9 @@
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/WorkerRepository.java": {
-    "mtime": 1794260787.8140078,
-    "seen": 1794405955.307398,
-    "ast_hash": "92874c378959cc0f7e01aee77afec02b",
+    "mtime": 1794462822.4202983,
+    "seen": 1794539837.488627,
+    "ast_hash": "58baea884ac8fcdd2b5394d76a8e64de",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/WorkerResponse.java": {
@@ -798,9 +798,9 @@
     "semantic_hash": ""
   },
   "src/test/java/com/SaaS/Constructora/identity/domain/MembershipTest.java": {
-    "mtime": 1794248216.6225529,
-    "seen": 1794249785.8579154,
-    "ast_hash": "843fcaab27e82d10cca2bb23961d8302",
+    "mtime": 1794463031.9048028,
+    "seen": 1794539837.4889288,
+    "ast_hash": "aba10e1c953c916bf19e99d31c038cc5",
     "semantic_hash": ""
   },
   "src/test/java/com/SaaS/Constructora/personnel/PersonnelServiceTest.java": {
@@ -816,21 +816,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1794247387.1118364,
-    "seen": 1794249785.8579443,
-    "ast_hash": "98c7b77a80fd4f18e56bfb3fb62905dd",
-    "semantic_hash": ""
-  },
-  "neon.ts": {
-    "mtime": 1794321244.8964748,
-    "seen": 1794405955.307261,
-    "ast_hash": "33a3fc5c7a21eae39181a323c511c1ce",
-    "semantic_hash": ""
-  },
-  "package.json": {
-    "mtime": 1794321248.5884008,
-    "seen": 1794405955.3072655,
-    "ast_hash": "1ab1e6a1aad23e1f7f67138786361102",
+    "mtime": 1794463384.598812,
+    "seen": 1794539837.4890234,
+    "ast_hash": "6dde7b58680cca4eb9f53654a9bdb006",
     "semantic_hash": ""
   },
   "src/main/java/com/SaaS/Constructora/personnel/CreateWorkerPositionRequest.java": {
@@ -863,12 +851,6 @@
     "ast_hash": "879c5b112d788808f43c3a9fc1d176ea",
     "semantic_hash": ""
   },
-  "src/main/java/com/SaaS/Constructora/shared/config/NeonJdbcConfig.java": {
-    "mtime": 1794405576.0224628,
-    "seen": 1794405955.3074553,
-    "ast_hash": "bb677fbe490c02ebf32a096f61f5db29",
-    "semantic_hash": ""
-  },
   "src/main/resources/db/migration/V14__create_worker_positions.sql": {
     "mtime": 1794257952.9411294,
     "seen": 1794405955.3074868,
@@ -891,6 +873,132 @@
     "mtime": 1794260801.6381216,
     "seen": 1794405955.3075166,
     "ast_hash": "93d02672ae08b967266058004b183adf",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/application/AcceptInvitationUseCase.java": {
+    "mtime": 1794463377.0349417,
+    "seen": 1794539837.487928,
+    "ast_hash": "d508557bf78ac68688e77f7275a89352",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/application/InvitationGate.java": {
+    "mtime": 1794463363.9631653,
+    "seen": 1794539837.4882238,
+    "ast_hash": "d745888869fe52e4f3e15808cd14b694",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/application/InvitationIssued.java": {
+    "mtime": 1794462784.1009302,
+    "seen": 1794539837.48823,
+    "ast_hash": "f453984bf526783e84b36df84b209b69",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/application/InvitationPreview.java": {
+    "mtime": 1794462784.1009302,
+    "seen": 1794539837.4882355,
+    "ast_hash": "debf30b577eb29672a4b5e2ad2f76b5d",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/application/InvitationQueryService.java": {
+    "mtime": 1794463380.3588848,
+    "seen": 1794539837.4882398,
+    "ast_hash": "e4a6afa09c3b95d54a2808941abbb163",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/application/InviteMembershipUseCase.java": {
+    "mtime": 1794463368.9790795,
+    "seen": 1794539837.4882445,
+    "ast_hash": "92816a7fcff1cb7db17a04f27824c6e3",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/application/ResendInvitationUseCase.java": {
+    "mtime": 1794463373.3830042,
+    "seen": 1794539837.488279,
+    "ast_hash": "adeb94b28126875ff6e167082d00ab1d",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/application/ports/MembershipInvitationRepository.java": {
+    "mtime": 1794462754.3334193,
+    "seen": 1794539837.4883184,
+    "ast_hash": "cac389d059cebbf70d6882b92d1aa833",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/domain/MembershipInvitation.java": {
+    "mtime": 1794462741.729626,
+    "seen": 1794539837.4883509,
+    "ast_hash": "1ed4ef4a8347dcd439e4eab9518a08a8",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/domain/MembershipStatus.java": {
+    "mtime": 1794462741.729626,
+    "seen": 1794539837.4883552,
+    "ast_hash": "c9e8fa1f8ca7fd52546642d850729f36",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/infrastructure/MembershipInvitationJpaEntity.java": {
+    "mtime": 1794462769.713167,
+    "seen": 1794539837.488406,
+    "ast_hash": "1e4c9cd968aad588a32496d6e9a84bf3",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/infrastructure/MembershipInvitationJpaRepository.java": {
+    "mtime": 1794462769.713167,
+    "seen": 1794539837.4884107,
+    "ast_hash": "a58dd7726a9c937f2e56ecfa5f2f176e",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/infrastructure/MembershipInvitationRepositoryAdapter.java": {
+    "mtime": 1794462769.7211668,
+    "seen": 1794539837.4884143,
+    "ast_hash": "ea32326c944cdb6bb70866e65b3a73ce",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/interfaces/dto/AcceptInvitationRequest.java": {
+    "mtime": 1794462802.7926223,
+    "seen": 1794539837.4884992,
+    "ast_hash": "c93ea68f565adbed9844c4eb427382aa",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/identity/interfaces/dto/InvitationPreviewResponse.java": {
+    "mtime": 1794462802.7926223,
+    "seen": 1794539837.4885182,
+    "ast_hash": "241f3e2838e7e1b2af279a2ddee4802a",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/personnel/InviteWorkerRequest.java": {
+    "mtime": 1794462835.8320763,
+    "seen": 1794539837.488574,
+    "ast_hash": "7979971b1dd1c05b426d774635dad65f",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/personnel/InviteWorkerResponse.java": {
+    "mtime": 1794462835.8320763,
+    "seen": 1794539837.4885783,
+    "ast_hash": "d9767392cdb2cdab6085035afffe0354",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/SaaS/Constructora/personnel/InviteWorkerUseCase.java": {
+    "mtime": 1794462835.8400762,
+    "seen": 1794539837.4885824,
+    "ast_hash": "7b24862a1917994d291e2245395261a5",
+    "semantic_hash": ""
+  },
+  "src/main/resources/db/migration/V17__membership_status_and_invitations.sql": {
+    "mtime": 1794462850.0118415,
+    "seen": 1794539837.488869,
+    "ast_hash": "76c669a198a08041776bdaf9bd7660d3",
+    "semantic_hash": ""
+  },
+  "src/test/java/com/SaaS/Constructora/identity/InvitationIntegrationTest.java": {
+    "mtime": 1794463201.3019383,
+    "seen": 1794539837.4889152,
+    "ast_hash": "2d00883ab57c1533f31d0db5e7d7abe9",
+    "semantic_hash": ""
+  },
+  "src/test/java/com/SaaS/Constructora/identity/domain/MembershipInvitationTest.java": {
+    "mtime": 1794463031.9008029,
+    "seen": 1794539837.4889243,
+    "ast_hash": "659d14d9d98a2334babd29f6bcb1e849",
     "semantic_hash": ""
   }
 }
