@@ -74,10 +74,11 @@ public class MembershipValidationFilter extends OncePerRequestFilter {
 
         Membership membership;
         try {
+            // La membresía se busca por el tenant del JWT: el contexto autenticado
+            // no puede operar sobre una empresa distinta de la que el token declara,
+            // aunque el usuario pertenezca a varias.
             membership = membershipRepository
-                    .findActiveByUserId(user.userId())
-                    .stream()
-                    .findFirst()
+                    .findActiveByUserIdAndTenantId(user.userId(), user.tenantId())
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.FORBIDDEN,
                             "Usuario no tiene membresía activa en esta empresa"));

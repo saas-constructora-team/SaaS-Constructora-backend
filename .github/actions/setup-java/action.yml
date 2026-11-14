@@ -1,0 +1,22 @@
+name: Setup Java + Maven
+description: Instala Temurin JDK y configura la caché de Maven (reutilizable en todos los workflows).
+
+inputs:
+  java-version:
+    description: Versión de Java a instalar.
+    required: false
+    default: "25"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK ${{ inputs.java-version }}
+      uses: actions/setup-java@v6.3.0
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java-version }}
+        cache: maven
+
+    - name: Verify Maven wrapper
+      shell: bash
+      run: ./mvnw -v

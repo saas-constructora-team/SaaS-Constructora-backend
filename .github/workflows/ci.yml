@@ -1,0 +1,108 @@
+# ============================================================
+# CI — Constructora backend
+# - Push: unitarias (rápido)
+# - PR: unitarias + integración (Testcontainers)
+# - Cobertura con umbral mínimo (jacoco:check)
+# - Artefactos: JAR, reportes de tests y cobertura
+# ============================================================
+name: CI
+
+on:
+  push:
+    branches: [main, "chore/**", "feat/**", "refactor/**"]
+  pull_request:
+    branches: [main]
+
+# Cancela ejecuciones anteriores del mismo PR/rama (ahorra minutos)
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # ----------------------------------------------------------
+  # 1) Pruebas unitarias (rápido, se ejecuta en cada push)
+  # ----------------------------------------------------------
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Java + Maven
+        uses: ./.github/actions/setup-java
+
+      - name: Run unit tests
+        run: ./mvnw -B -ntp test -Dtest='!*IntegrationTest'
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: unit-test-reports
+          path: target/surefire-reports/
+          retention-days: 14
+
+  # ----------------------------------------------------------
+  # 2) Suite completa en PR y main: integración (Testcontainers),
+  #    cobertura y umbral mínimo (jacoco:check)
+  # ----------------------------------------------------------
+  integration-tests:
+    name: Integration tests + coverage
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Java + Maven
+        uses: ./.github/actions/setup-java
+
+      - name: Run full test suite (unit + integration, PostgreSQL real)
+        run: ./mvnw -B -ntp verify
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: integration-test-reports
+          path: target/surefire-reports/
+          retention-days: 14
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 14
+
+  # ----------------------------------------------------------
+  # 3) Empaquetado del JAR (artefacto de build reproducible)
+  # ----------------------------------------------------------
+  package:
+    name: Package JAR
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Java + Maven
+        uses: ./.github/actions/setup-java
+
+      - name: Build JAR
+        run: ./mvnw -B -ntp package -DskipTests
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: constructora-backend-jar
+          path: target/Constructora-*.jar
+          retention-days: 14

@@ -139,12 +139,13 @@ class InvitationIntegrationTest {
         mockMvc.perform(get("/api/auth/invitations/" + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("Constructora Demo"))
-                .andExpect(jsonPath("$.email").value(email));
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.requiresPassword").value(true));
 
         // Aceptación: define contraseña y recibe sesión del tenant que invita
         mockMvc.perform(post("/api/auth/invitations/accept")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"token\":\"" + token + "\",\"password\":\"NuevaClave123\"}"))
+                        .content("{\"token\":\"" + token + "\",\"password\":\"NuevaClave123!\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.user.email").value(email))
@@ -161,14 +162,14 @@ class InvitationIntegrationTest {
         // Ya puede iniciar sesión con la contraseña que definió
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"NuevaClave123\"}"))
+                        .content("{\"email\":\"" + email + "\",\"password\":\"NuevaClave123!\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty());
 
         // El enlace es de un solo uso
         mockMvc.perform(post("/api/auth/invitations/accept")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"token\":\"" + token + "\",\"password\":\"OtraClave123\"}"))
+                        .content("{\"token\":\"" + token + "\",\"password\":\"OtraClave123!\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -180,8 +181,9 @@ class InvitationIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"companyName\":\"Constructora B " + UUID.randomUUID() + "\","
+                                + "\"taxId\":\"NIT-B\",\"address\":\"Calle B 123\","
                                 + "\"adminFullName\":\"Admin B\",\"adminEmail\":\"" + email + "\","
-                                + "\"adminPassword\":\"ClaveB1234\"}"))
+                                + "\"adminPassword\":\"ClaveB1234!\"}"))
                 .andExpect(status().isCreated());
 
         String adminToken = loginAsAdmin();
@@ -193,6 +195,10 @@ class InvitationIntegrationTest {
         assertEquals(Integer.valueOf(2), jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM memberships m JOIN users u ON u.id = m.user_id "
                         + "WHERE u.email = ?", Integer.class, email));
+
+        mockMvc.perform(get("/api/auth/invitations/" + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiresPassword").value(false));
 
         // Al aceptar sin contraseña (la cuenta ya existía) entra directo a la empresa que invita
         mockMvc.perform(post("/api/auth/invitations/accept")

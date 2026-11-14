@@ -62,4 +62,20 @@ public class UserQueryService {
                 })
                 .toList();
     }
+
+    /**
+     * Valida que el usuario pueda consultar candidatos a asignación en el tenant.
+     * Un ADMIN siempre puede; un MEMBER solo si se le concedió el permiso explícito.
+     * La decisión se toma contra la base de datos para aplicar cambios de inmediato.
+     */
+    @Transactional(readOnly = true)
+    public void requireCanViewAssignmentCandidates(UUID tenantId, UUID userId) {
+        Membership membership = membershipRepository.findActiveByUserIdAndTenantId(userId, tenantId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "No tiene permisos para consultar candidatos de asignación"));
+        if (!membership.canViewAssignmentCandidates()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "No tiene permisos para consultar candidatos de asignación");
+        }
+    }
 }

@@ -23,6 +23,15 @@ public enum Role {
         return isAdmin();
     }
 
+    /**
+     * Los ADMIN siempre pueden consultar candidatos a asignación. Un MEMBER
+     * puede hacerlo solo si un ADMIN le concedió el permiso explícito en su
+     * membresía (ver {@link Membership#canViewAssignmentCandidates()}).
+     */
+    public boolean canViewAssignmentCandidates() {
+        return isAdmin();
+    }
+
     /** Solo ADMIN puede crear proyectos dentro de su empresa. */
     public boolean canCreateProject() {
         return isAdmin();

@@ -8,6 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,6 +22,8 @@ import java.util.UUID;
  * la obra a la que está vinculado. El tenant se referencia por ID (nunca con
  * {@code @ManyToOne}) y toda consulta debe filtrarlo explícitamente.
  */
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = UUID.class))
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Entity
 @Table(name = "workers", uniqueConstraints = @UniqueConstraint(
         name = "uk_workers_tenant_document",

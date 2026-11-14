@@ -16,20 +16,27 @@ public class Membership {
     private final MembershipStatus status;
     private final boolean active;
     private final boolean personnelCreationAllowed;
+    private final boolean assignmentCandidatesViewAllowed;
     private final LocalDateTime createdAt;
 
     public Membership(UUID id, UUID userId, UUID tenantId, Role role, boolean active, LocalDateTime createdAt) {
-        this(id, userId, tenantId, role, MembershipStatus.ACTIVE, active, false, createdAt);
+        this(id, userId, tenantId, role, MembershipStatus.ACTIVE, active, false, false, createdAt);
     }
 
     public Membership(UUID id, UUID userId, UUID tenantId, Role role, boolean active,
                       boolean personnelCreationAllowed, LocalDateTime createdAt) {
         this(id, userId, tenantId, role, MembershipStatus.ACTIVE, active,
-                personnelCreationAllowed, createdAt);
+                personnelCreationAllowed, false, createdAt);
     }
 
     public Membership(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
                       boolean active, boolean personnelCreationAllowed, LocalDateTime createdAt) {
+        this(id, userId, tenantId, role, status, active, personnelCreationAllowed, false, createdAt);
+    }
+
+    public Membership(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
+                      boolean active, boolean personnelCreationAllowed,
+                      boolean assignmentCandidatesViewAllowed, LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.tenantId = tenantId;
@@ -37,6 +44,7 @@ public class Membership {
         this.status = status;
         this.active = active;
         this.personnelCreationAllowed = personnelCreationAllowed;
+        this.assignmentCandidatesViewAllowed = assignmentCandidatesViewAllowed;
         this.createdAt = createdAt;
     }
 
@@ -46,8 +54,15 @@ public class Membership {
      */
     public static Membership invited(UUID id, UUID userId, UUID tenantId, Role role,
                                      boolean personnelCreationAllowed, LocalDateTime createdAt) {
+        return invited(id, userId, tenantId, role, personnelCreationAllowed, false, createdAt);
+    }
+
+    public static Membership invited(UUID id, UUID userId, UUID tenantId, Role role,
+                                     boolean personnelCreationAllowed,
+                                     boolean assignmentCandidatesViewAllowed,
+                                     LocalDateTime createdAt) {
         return new Membership(id, userId, tenantId, role, MembershipStatus.INVITED,
-                true, personnelCreationAllowed, createdAt);
+                true, personnelCreationAllowed, assignmentCandidatesViewAllowed, createdAt);
     }
 
     /**
@@ -56,24 +71,31 @@ public class Membership {
      */
     public Membership withRole(Role newRole) {
         return new Membership(id, userId, tenantId, newRole, status, active,
-                personnelCreationAllowed, createdAt);
+                personnelCreationAllowed, assignmentCandidatesViewAllowed, createdAt);
     }
 
     /** Devuelve una copia con el permiso de creación de personal actualizado. */
     public Membership withPersonnelCreationPermission(boolean allowed) {
-        return new Membership(id, userId, tenantId, role, status, active, allowed, createdAt);
+        return new Membership(id, userId, tenantId, role, status, active, allowed,
+                assignmentCandidatesViewAllowed, createdAt);
+    }
+
+    /** Devuelve una copia con el permiso de consultar candidatos a asignación actualizado. */
+    public Membership withAssignmentCandidatesViewPermission(boolean allowed) {
+        return new Membership(id, userId, tenantId, role, status, active,
+                personnelCreationAllowed, allowed, createdAt);
     }
 
     /** Devuelve una copia lista para volver a invitar a una membresía no activa. */
     public Membership reinvited() {
         return new Membership(id, userId, tenantId, role, MembershipStatus.INVITED,
-                true, personnelCreationAllowed, createdAt);
+                true, personnelCreationAllowed, assignmentCandidatesViewAllowed, createdAt);
     }
 
     /** Activa la membresía cuando la persona acepta la invitación. */
     public Membership activate() {
         return new Membership(id, userId, tenantId, role, MembershipStatus.ACTIVE,
-                true, personnelCreationAllowed, createdAt);
+                true, personnelCreationAllowed, assignmentCandidatesViewAllowed, createdAt);
     }
 
     /**
@@ -97,6 +119,15 @@ public class Membership {
         return role.canCreatePersonnel() || personnelCreationAllowed;
     }
 
+    /**
+     * Permiso efectivo para consultar candidatos a asignación de proyectos:
+     * un ADMIN siempre puede; un MEMBER solo si un ADMIN le habilitó el
+     * permiso de forma explícita.
+     */
+    public boolean canViewAssignmentCandidates() {
+        return role.canViewAssignmentCandidates() || assignmentCandidatesViewAllowed;
+    }
+
     public UUID getId() { return id; }
     public UUID getUserId() { return userId; }
     public UUID getTenantId() { return tenantId; }
@@ -104,5 +135,6 @@ public class Membership {
     public MembershipStatus getStatus() { return status; }
     public boolean isActive() { return active; }
     public boolean isPersonnelCreationAllowed() { return personnelCreationAllowed; }
+    public boolean isAssignmentCandidatesViewAllowed() { return assignmentCandidatesViewAllowed; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

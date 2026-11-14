@@ -1,0 +1,110 @@
+# ============================================================
+# Build & Publish Image — Constructora backend
+# - PR: construye y escanea la imagen (sin publicar)
+# - main: publica :main y :sha-<commit> en GHCR
+# - tag v*.*.*: publica la versión semántica y firma con cosign
+# ============================================================
+name: Build & Publish Image
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: image-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+  id-token: write # firma keyless con cosign
+
+env:
+  IMAGE: ghcr.io/saas-constructora-team/saas-constructora-backend
+
+jobs:
+  build-scan-push:
+    name: Build, scan and push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Compute image tags
+        id: tags
+        run: |
+          TAGS="${IMAGE}:sha-${GITHUB_SHA}"
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            TAGS="${TAGS} ${IMAGE}:main"
+          fi
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAGS="${TAGS} ${IMAGE}:${GITHUB_REF_NAME}"
+          fi
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            TAGS="${TAGS} ${IMAGE}:pr-${{ github.event.number }}"
+          fi
+          {
+            echo "tags<<EOF"
+            for t in ${TAGS}; do echo "${t}"; done
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          printf "%s\n" ${TAGS} > image-tags.txt
+          echo "### Imágenes" >> "$GITHUB_STEP_SUMMARY"
+          for t in ${TAGS}; do echo "- \`${t}\`" >> "$GITHUB_STEP_SUMMARY"; done
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        run: |
+          ARGS=""
+          for t in ${{ steps.tags.outputs.tags }}; do ARGS="${ARGS} -t ${t}"; done
+          docker build ${ARGS} .
+
+      - name: Scan image (Trivy)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE }}:sha-${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Upload Trivy SARIF
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4.39.3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-image
+
+      - name: Push image
+        if: github.event_name != 'pull_request'
+        run: |
+          for t in ${{ steps.tags.outputs.tags }}; do docker push "${t}"; done
+
+      - name: Install cosign
+        if: github.ref_type == 'tag'
+        uses: sigstore/cosign-installer@v4.1.3
+
+      - name: Sign image (keyless)
+        if: github.ref_type == 'tag'
+        run: cosign sign --yes "${IMAGE}:${GITHUB_REF_NAME}"
+
+      - name: Upload image metadata
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: image-tags
+          path: ${{ github.workspace }}/image-tags.txt
+          retention-days: 14

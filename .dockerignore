@@ -1,0 +1,31 @@
+# Build artifacts
+target/
+build/
+.out/
+.pmdep/
+.pom/
+
+# Secretos (ignorados por git, pero no se envían al registro)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*secrets/
+
+# Logs
+logs/
+
+# Grafo de conocimiento y dependencias de herramientas
+graphify-out/
+node_modules/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Entorno local
+application-local.properties

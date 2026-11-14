@@ -10,6 +10,7 @@ import com.SaaS.Constructora.identity.interfaces.dto.AcceptInvitationRequest;
 import com.SaaS.Constructora.identity.interfaces.dto.LoginResponse;
 import com.SaaS.Constructora.shared.security.JwtService;
 import com.SaaS.Constructora.shared.security.TokenHasher;
+import com.SaaS.Constructora.shared.validation.PasswordPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -79,6 +80,9 @@ public class AcceptInvitationUseCase {
             if (!StringUtils.hasText(request.password())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Debe definir una contraseña para activar su cuenta");
+            }
+            if (!PasswordPolicy.isValid(request.password())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, PasswordPolicy.MESSAGE);
             }
             userRepository.updatePasswordHashAndActivate(
                     user.getId(), passwordEncoder.encode(request.password()));

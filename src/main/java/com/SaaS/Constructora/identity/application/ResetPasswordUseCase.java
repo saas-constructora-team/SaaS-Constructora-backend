@@ -5,6 +5,7 @@ import com.SaaS.Constructora.identity.application.ports.UserRepository;
 import com.SaaS.Constructora.identity.domain.PasswordResetToken;
 import com.SaaS.Constructora.identity.domain.User;
 import com.SaaS.Constructora.shared.security.TokenHasher;
+import com.SaaS.Constructora.shared.validation.PasswordPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,10 @@ public class ResetPasswordUseCase {
 
     @Transactional
     public void reset(String rawToken, String newPassword) {
+        if (!PasswordPolicy.isValid(newPassword)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, PasswordPolicy.MESSAGE);
+        }
+
         PasswordResetToken token = tokenRepository.findByTokenHash(tokenHasher.hash(rawToken))
                 .filter(t -> t.isValidAt(LocalDateTime.now()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, TOKEN_INVALIDO));

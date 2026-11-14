@@ -1,9 +1,13 @@
 package com.SaaS.Constructora.identity.application;
 
 import com.SaaS.Constructora.identity.application.ports.MembershipInvitationRepository;
+import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
 import com.SaaS.Constructora.identity.application.ports.TenantRepository;
+import com.SaaS.Constructora.identity.application.ports.UserRepository;
+import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.MembershipInvitation;
 import com.SaaS.Constructora.identity.domain.Tenant;
+import com.SaaS.Constructora.identity.domain.User;
 import com.SaaS.Constructora.shared.security.TokenHasher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,16 +23,25 @@ import java.time.LocalDateTime;
 @Service
 public class InvitationQueryService {
 
+    private static final String INVITACION_INVALIDA =
+            "La invitación no existe, expiró o ya fue utilizada";
+
     private final MembershipInvitationRepository invitationRepository;
+    private final MembershipRepository membershipRepository;
+    private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
     private final TokenHasher tokenHasher;
     private final InvitationGate invitationGate;
 
     public InvitationQueryService(MembershipInvitationRepository invitationRepository,
+                                  MembershipRepository membershipRepository,
+                                  UserRepository userRepository,
                                   TenantRepository tenantRepository,
                                   TokenHasher tokenHasher,
                                   InvitationGate invitationGate) {
         this.invitationRepository = invitationRepository;
+        this.membershipRepository = membershipRepository;
+        this.userRepository = userRepository;
         this.tenantRepository = tenantRepository;
         this.tokenHasher = tokenHasher;
         this.invitationGate = invitationGate;
@@ -41,15 +54,23 @@ public class InvitationQueryService {
                 .findByTokenHash(tokenHasher.hash(rawToken))
                 .filter(i -> i.isUsable(LocalDateTime.now()))
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "La invitación no existe, expiró o ya fue utilizada"));
+                        HttpStatus.BAD_REQUEST, INVITACION_INVALIDA));
 
         Tenant tenant = tenantRepository.findById(invitation.getTenantId())
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "La invitación no existe, expiró o ya fue utilizada"));
+                        HttpStatus.BAD_REQUEST, INVITACION_INVALIDA));
 
+        Membership membership = membershipRepository
+                .findByIdAndTenantId(invitation.getMembershipId(), invitation.getTenantId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, INVITACION_INVALIDA));
+
+        User user = userRepository.findById(membership.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, INVITACION_INVALIDA));
+
+        boolean requiresPassword = !user.isActive();
         return new InvitationPreview(tenant.getName(), invitation.getEmail(),
-                invitation.getExpiresAt());
+                invitation.getExpiresAt(), requiresPassword);
     }
 }

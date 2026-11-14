@@ -260,9 +260,11 @@ class ProjectTenantIntegrationTest {
         String body = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"companyName\":\"Constructora " + suffix + "\","
+                                + "\"taxId\":\"NIT-" + suffix + "\","
+                                + "\"address\":\"Calle Prueba 123\","
                                 + "\"adminFullName\":\"Admin Prueba\","
                                 + "\"adminEmail\":\"admin-" + suffix + "@prueba.com\","
-                                + "\"adminPassword\":\"Secreta123\"}"))
+                                + "\"adminPassword\":\"Secreta123!\"}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.accessToken");

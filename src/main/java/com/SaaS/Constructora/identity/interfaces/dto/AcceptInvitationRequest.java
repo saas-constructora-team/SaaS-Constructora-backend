@@ -1,6 +1,8 @@
 package com.SaaS.Constructora.identity.interfaces.dto;
 
+import com.SaaS.Constructora.shared.validation.PasswordPolicy;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -10,8 +12,8 @@ import jakarta.validation.constraints.Size;
 public record AcceptInvitationRequest(
         @NotBlank(message = "El token es obligatorio") String token,
 
-        @Size(min = 8, max = 100,
-                message = "La contraseña debe tener entre 8 y 100 caracteres")
+        @Size(max = 100, message = "La contraseña no puede superar los 100 caracteres")
+        @Pattern(regexp = PasswordPolicy.PATTERN, message = PasswordPolicy.MESSAGE)
         String password
 ) {
 }

@@ -10,6 +10,7 @@ import com.SaaS.Constructora.identity.domain.User;
 import com.SaaS.Constructora.identity.interfaces.dto.RegisterTenantRequest;
 import com.SaaS.Constructora.identity.interfaces.dto.RegisterTenantResponse;
 import com.SaaS.Constructora.shared.security.JwtService;
+import com.SaaS.Constructora.shared.validation.PasswordPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,10 @@ public class RegisterTenantUseCase {
 
     @Transactional
     public RegisterTenantResponse register(RegisterTenantRequest request) {
+        if (!PasswordPolicy.isValid(request.adminPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, PasswordPolicy.MESSAGE);
+        }
+
         String email = request.adminEmail().toLowerCase().trim();
         if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El email ya está registrado");
