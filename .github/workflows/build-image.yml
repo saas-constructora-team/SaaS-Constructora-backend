@@ -89,7 +89,12 @@ jobs:
           format: sarif
           output: trivy-results.sarif
           severity: "HIGH,CRITICAL"
-          ignore-unfixed: true
+          # Por defecto el action borra `severity` cuando format=sarif y escanea
+          # TODAS las severidades; un MEDIUM hacía fallar el gate aunque no esté
+          # en la política. Con esto el filtro HIGH,CRITICAL también se aplica
+          # al SARIF y al código de salida.
+          limit-severities-for-sarif: true
+          ignore-unfixed: "true"
           exit-code: "1"
 
       - name: Upload Trivy SARIF
