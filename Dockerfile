@@ -22,6 +22,10 @@ RUN ./mvnw -B -ntp package -DskipTests
 # ---------------------------------------------------------------
 FROM eclipse-temurin:25-jre-alpine AS runtime
 
+# Aplica parches de seguridad de paquetes del SO (Alpine). La imagen base
+# puede quedarse atrás de las correcciones publicadas en los repositorios.
+RUN apk upgrade --no-cache
+
 # Usuario sin privilegios
 RUN addgroup -S app && adduser -S app -G app
 

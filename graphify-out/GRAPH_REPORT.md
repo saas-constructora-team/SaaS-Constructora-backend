@@ -1,49 +1,51 @@
-# Graph Report - SaaS-Constructora-backend  (2026-11-14)
+# Graph Report - SaaS-Constructora-backend  (2026-11-18)
 
 ## Corpus Check
-- 167 files · ~35,826 words
+- 170 files · ~36,774 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: (none) 4, .properties 2, .example 1)
 
 ## Summary
-- 1386 nodes · 4305 edges · 67 communities (27 shown, 40 thin omitted)
+- 1420 nodes · 4377 edges · 58 communities (26 shown, 32 thin omitted)
 - Extraction: 85% EXTRACTED · 15% INFERRED · 0% AMBIGUOUS · INFERRED: 650 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e1fb4847`
+- Built from commit: `51b8d2af`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - Worker
 - User
-- LotOwnership
+- .update
 - .create
 - ProjectStage
 - httpstatus
 - AuthControllerTest.java
 - PasswordResetToken
-- .assign
-- ExternalIdentity
+- org.springframework.context.annotation.Bean
+- uuid
 - Project
 - V3__create_identity.sql
 - org.junit.jupiter.api.Test
+- ResendEmailSender
 - .update
-- RecordingEmailSender
-- ProjectAssignment
+- ProjectAuthorizationIntegrationTest
+- .verify
+- JwtService.java
 - Tenant
 - ProjectAssignmentIntegrationTest
 - ProjectStageIntegrationTest
 - ProjectServiceTest
-- .list
-- GlobalExceptionHandler.java
-- GoogleTokenVerifierClient.java
+- ProjectTenantIntegrationTest
+- .register
+- GoogleTokenVerifierClient
 - MembershipInvitation
-- .ensureBelongsToTenant
+- TenantJpaEntity
 - MembershipValidationFilter.java
 - ConstructoraApplication.java
-- MembershipJpaRepository
+- ProjectAssignmentDelegationIntegrationTest
 - MembershipJpaEntity
 - V2__create_event_publication.sql
 - com.SaaS:Constructora
@@ -51,24 +53,17 @@
 - Membership
 - org.springframework.transaction.annotation.Transactional
 - ProjectResponse
-- UserJpaEntity
-- UserRepositoryAdapter
-- JwtServiceTest.java
+- .create
+- package.json
+- .invite
+- Backend Guidelines (`saas-backend`)
 - WorkerPosition
-- org.springframework.security.oauth2.jwt.Jwt
 - README.md
 - V13__create_workers.sql
-- TenantRepositoryAdapter
-- SecurityConfig.java
-- CurrentUserArgumentResolver.java
 - .login
 - V14__create_worker_positions.sql
 - .authenticate
-- WebConfig.java
-- BudgetRange
-- ProjectType
-- TenantContext
-- ProjectStatus
+- NeonJdbcConfig.java
 
 ## God Nodes (most connected - your core abstractions)
 1. `Role` - 74 edges
@@ -97,15 +92,19 @@
 ## Import Cycles
 - None detected.
 
-## Communities (67 total, 40 thin omitted)
+## Communities (58 total, 32 thin omitted)
 
 ### Community 0 - "Worker"
-Cohesion: 0.11
-Nodes (8): DocumentType, FOREIGN_ID, IDENTITY_CARD, NATIONAL_ID, OTHER, PASSPORT, InviteWorkerRequest, Worker
+Cohesion: 0.10
+Nodes (10): InvitationIssued, DocumentType, FOREIGN_ID, IDENTITY_CARD, NATIONAL_ID, OTHER, PASSPORT, InviteWorkerRequest (+2 more)
 
-### Community 2 - "LotOwnership"
-Cohesion: 0.16
-Nodes (7): CreateProjectRequest, LotOwnership, IN_PURCHASE, OWNED, RENTED, ProjectDetails, UpdateProjectRequest
+### Community 2 - ".update"
+Cohesion: 0.10
+Nodes (18): BudgetRange, FROM_100M_TO_250M, FROM_250M_TO_500M, FROM_50M_TO_100M, OVER_500M, UNDER_50M, LotOwnership, IN_PURCHASE (+10 more)
+
+### Community 3 - ".create"
+Cohesion: 0.19
+Nodes (3): CreateWorkerRequest, WorkerResponse, PersonnelServiceTest
 
 ### Community 4 - "ProjectStage"
 Cohesion: 0.08
@@ -113,75 +112,75 @@ Nodes (8): CreateProjectStageRequest, ProjectStage, ProjectStageController, Proj
 
 ### Community 5 - "httpstatus"
 Cohesion: 0.08
-Nodes (14): PermissionManagementUseCase, UserQueryService, UserSummary, ForgotPasswordRequest, UserResponse, MessageResponse, ResetPasswordRequest, UserResponse (+6 more)
-
-### Community 6 - "AuthControllerTest.java"
-Cohesion: 0.07
-Nodes (10): InvitationIntegrationTest, RecordingInvitationEmailSender, TestEmailConfig, TestEmailConfig, ProjectAssignmentDelegationIntegrationTest, Session, ProjectAuthorizationIntegrationTest, Session (+2 more)
+Nodes (11): InvitationPreview, PermissionManagementUseCase, UserQueryService, UserSummary, InvitationPreviewResponse, UserResponse, UserResponse, UserController (+3 more)
 
 ### Community 7 - "PasswordResetToken"
 Cohesion: 0.11
 Nodes (4): PasswordResetToken, PasswordResetTokenJpaEntity, PasswordResetTokenJpaRepository, PasswordResetTokenRepositoryAdapter
 
-### Community 8 - ".assign"
+### Community 8 - "org.springframework.context.annotation.Bean"
 Cohesion: 0.13
-Nodes (4): ProjectAssignmentController, ProjectAssignmentRepository, ProjectAssignmentService, ProjectAssignmentServiceTest
+Nodes (5): InvitationIntegrationTest, RecordingInvitationEmailSender, TestEmailConfig, FakeGoogleTokenVerifier, TestEmailConfig
 
-### Community 9 - "ExternalIdentity"
-Cohesion: 0.12
-Nodes (5): ExternalIdentityRepository, ExternalIdentity, ExternalIdentityJpaEntity, ExternalIdentityJpaRepository, ExternalIdentityRepositoryAdapter
+### Community 9 - "uuid"
+Cohesion: 0.05
+Nodes (8): ExternalIdentityRepository, ExternalIdentity, ExternalIdentityJpaEntity, ExternalIdentityJpaRepository, ExternalIdentityRepositoryAdapter, TenantJpaRepository, TenantRepositoryAdapter, WorkerRepository
+
+### Community 10 - "Project"
+Cohesion: 0.11
+Nodes (3): Project, ProjectStatus, ACTIVE
 
 ### Community 11 - "V3__create_identity.sql"
 Cohesion: 0.08
 Nodes (30): idx_project_assignments_project_role, idx_membership_invitations_email, idx_membership_invitations_expires, idx_membership_invitations_membership, idx_membership_invitations_tenant, idx_memberships_tenant_status, membership_invitations, idx_projects_tenant (+22 more)
 
-### Community 12 - "org.junit.jupiter.api.Test"
-Cohesion: 0.11
-Nodes (3): AuthControllerTest, FakeGoogleTokenVerifier, LoginIntegrationTest
-
 ### Community 14 - ".update"
-Cohesion: 0.12
-Nodes (7): CreateWorkerPositionRequest, UpdateWorkerPositionRequest, WorkerPositionRepository, WorkerPositionResponse, WorkerPositionService, WorkerRepository, WorkerPositionServiceTest
+Cohesion: 0.14
+Nodes (6): CreateWorkerPositionRequest, UpdateWorkerPositionRequest, WorkerPositionRepository, WorkerPositionResponse, WorkerPositionService, WorkerPositionServiceTest
 
-### Community 17 - "ProjectAssignment"
-Cohesion: 0.12
-Nodes (7): AssignProjectRequest, ProjectAssignment, ProjectAssignmentResponse, ProjectRole, LEAD, MEMBER, UpdateProjectAssignmentRequest
-
-### Community 19 - "Tenant"
-Cohesion: 0.12
-Nodes (3): TenantJpaEntity, TenantResponse, TenantResponse
+### Community 17 - ".verify"
+Cohesion: 0.06
+Nodes (13): AssignProjectRequest, ProjectAssignment, ProjectAssignmentController, ProjectAssignmentRepository, ProjectAssignmentResponse, ProjectAssignmentService, ProjectRole, LEAD (+5 more)
 
 ### Community 21 - "ProjectStageIntegrationTest"
 Cohesion: 0.27
 Nodes (3): ProjectStageIntegrationTest, Session, StageRef
 
-### Community 23 - ".list"
-Cohesion: 0.24
-Nodes (4): 1. Patrón Arquitectónico y Estructura, 2. Reglas Innegociables del Backend, Backend Guidelines (`saas-backend`), ProjectRepository
-
-### Community 26 - "GoogleTokenVerifierClient.java"
-Cohesion: 0.06
-Nodes (8): GoogleAccount, GoogleTokenVerifier, EmailTemplates, GoogleTokenVerifierClient, ParameterizedTypeReference<Map<String, Object>>, ResendEmailSender, SmtpEmailSender, GoogleTokenVerifierClientTest
+### Community 26 - "GoogleTokenVerifierClient"
+Cohesion: 0.16
+Nodes (5): GoogleAccount, GoogleTokenVerifier, GoogleTokenVerifierClient, ParameterizedTypeReference<Map<String, Object>>, GoogleTokenVerifierClientTest
 
 ### Community 28 - "MembershipInvitation"
-Cohesion: 0.06
-Nodes (7): InvitationPreview, MembershipInvitation, MembershipInvitationJpaEntity, MembershipInvitationJpaRepository, MembershipInvitationRepositoryAdapter, InvitationPreviewResponse, MembershipInvitationTest
+Cohesion: 0.08
+Nodes (5): MembershipInvitation, MembershipInvitationJpaEntity, MembershipInvitationJpaRepository, MembershipInvitationRepositoryAdapter, MembershipInvitationTest
+
+### Community 30 - "MembershipValidationFilter.java"
+Cohesion: 0.05
+Nodes (7): ApiError, GlobalExceptionHandler, CurrentUserArgumentResolver, MembershipValidationFilter, SecurityConfig, TenantClaims, TenantContext
 
 ### Community 34 - "MembershipJpaEntity"
-Cohesion: 0.15
-Nodes (4): MembershipStatus, ACTIVE, INVITED, MembershipJpaEntity
+Cohesion: 0.06
+Nodes (9): MembershipStatus, ACTIVE, INVITED, MembershipJpaEntity, MembershipJpaRepository, MembershipRepositoryAdapter, UserJpaEntity, UserJpaRepository (+1 more)
 
 ### Community 35 - "V2__create_event_publication.sql"
 Cohesion: 0.83
 Nodes (3): event_publication, idx_event_publication_completion_date, idx_event_publication_publication_date
 
 ### Community 38 - "Role"
-Cohesion: 0.20
-Nodes (4): Role, ADMIN, MEMBER, WORKER
+Cohesion: 0.18
+Nodes (5): Role, ADMIN, MEMBER, WORKER, ProjectService
 
 ### Community 40 - "org.springframework.transaction.annotation.Transactional"
-Cohesion: 0.06
-Nodes (28): AcceptInvitationUseCase, CompanyIdentity, GoogleAuthUseCase, InvitationGate, InvitationIssued, InvitationQueryService, InviteMembershipUseCase, LoginUseCase (+20 more)
+Cohesion: 0.07
+Nodes (28): AcceptInvitationUseCase, GoogleAuthUseCase, InvitationGate, InvitationQueryService, InviteMembershipUseCase, LoginUseCase, PersonnelPermissionService, EmailSender (+20 more)
+
+### Community 43 - "package.json"
+Cohesion: 0.29
+Nodes (5): dependencies, @neon/config, @neon/env, @neon/config, @neon/env
+
+### Community 45 - "Backend Guidelines (`saas-backend`)"
+Cohesion: 0.50
+Nodes (3): 1. Patrón Arquitectónico y Estructura, 2. Reglas Innegociables del Backend, Backend Guidelines (`saas-backend`)
 
 ### Community 48 - "README.md"
 Cohesion: 0.22
@@ -191,41 +190,33 @@ Nodes (8): Base del enlace enviado por correo (por defecto APP_BASE_URL)., Confi
 Cohesion: 0.83
 Nodes (3): idx_workers_project, idx_workers_tenant, workers
 
-### Community 55 - ".login"
-Cohesion: 0.22
-Nodes (3): AcceptInvitationRequest, LoginRequest, LoginResponse
-
-### Community 60 - "WebConfig.java"
+### Community 57 - ".authenticate"
 Cohesion: 0.16
-Nodes (3): JwtConfig, PasswordConfig, WebConfig
+Nodes (3): GoogleAuthRequest, GoogleAuthResponse, TenantResponse
 
-### Community 61 - "BudgetRange"
-Cohesion: 0.25
-Nodes (6): BudgetRange, FROM_100M_TO_250M, FROM_250M_TO_500M, FROM_50M_TO_100M, OVER_500M, UNDER_50M
-
-### Community 62 - "ProjectType"
-Cohesion: 0.29
-Nodes (5): ProjectType, COMMERCIAL, INDUSTRIAL, MIXED, RESIDENTIAL
+### Community 60 - "NeonJdbcConfig.java"
+Cohesion: 0.08
+Nodes (7): NeonConnectionDetails, NeonFlywayConnectionDetails, NeonJdbcConfig, PostgresUrl, JwtConfig, PasswordConfig, WebConfig
 
 ## Knowledge Gaps
-- **26 isolated node(s):** `com.SaaS:Constructora`, `INVITED`, `ACTIVE`, `ADMIN`, `MEMBER` (+21 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 183 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **40 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **27 isolated node(s):** `@neon/env`, `com.SaaS:Constructora`, `INVITED`, `ACTIVE`, `ADMIN` (+22 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 190 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **32 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Role` connect `Role` to `Worker`, `User`, `ProjectStage`, `httpstatus`, `AuthControllerTest.java`, `.assign`, `PersonnelServiceTest.java`, `notblank`, `ProjectAssignment`, `ProjectServiceTest`, `.list`, `list`, `.ensureBelongsToTenant`, `MembershipJpaRepository`, `MembershipJpaEntity`, `Membership`, `org.springframework.transaction.annotation.Transactional`, `.invite`, `org.springframework.security.oauth2.jwt.Jwt`?**
-  _High betweenness centrality (0.102) - this node is a cross-community bridge._
-- **What connects `com.SaaS:Constructora`, `INVITED`, `ACTIVE` to the rest of the system?**
-  _26 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `Role` connect `Role` to `Worker`, `MembershipJpaEntity`, `.update`, `ProjectStage`, `httpstatus`, `AuthControllerTest.java`, `Membership`, `org.springframework.transaction.annotation.Transactional`, `uuid`, `.create`, `.invite`, `notblank`, `.verify`, `ProjectServiceTest`, `.list`, `MembershipValidationFilter.java`?**
+  _High betweenness centrality (0.085) - this node is a cross-community bridge._
+- **What connects `@neon/env`, `com.SaaS:Constructora`, `INVITED` to the rest of the system?**
+  _27 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Worker` be split into smaller, more focused modules?**
-  _Cohesion score 0.10752688172043011 - nodes in this community are weakly interconnected._
-- **Why does `Membership` connect `Membership` to `User`, `MembershipJpaEntity`, `MembershipJpaRepository`, `httpstatus`, `Role`, `AuthControllerTest.java`, `org.springframework.transaction.annotation.Transactional`, `.invite`, `PersonnelServiceTest.java`, `JwtService.java`, `.login`, `list`, `.authenticate`, `MembershipValidationFilter.java`?**
-  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+  _Cohesion score 0.09523809523809523 - nodes in this community are weakly interconnected._
+- **Why does `Membership` connect `Membership` to `User`, `MembershipJpaEntity`, `httpstatus`, `Role`, `AuthControllerTest.java`, `org.springframework.transaction.annotation.Transactional`, `uuid`, `.invite`, `JwtService.java`, `MembershipValidationFilter.java`, `.login`, `.authenticate`, `.register`?**
+  _High betweenness centrality (0.037) - this node is a cross-community bridge._
+- **Should `.update` be split into smaller, more focused modules?**
+  _Cohesion score 0.09852216748768473 - nodes in this community are weakly interconnected._
+- **Why does `Project` connect `Project` to `.update`, `Role`, `ProjectServiceTest`, `.list`, `Worker.java`?**
+  _High betweenness centrality (0.034) - this node is a cross-community bridge._
 - **Should `ProjectStage` be split into smaller, more focused modules?**
-  _Cohesion score 0.07767722473604827 - nodes in this community are weakly interconnected._
-- **Why does `Project` connect `Project` to `ProjectStatus`, `.onCreate`, `LotOwnership`, `ProjectServiceTest`, `.list`, `BudgetRange`, `ProjectType`, `Worker.java`?**
-  _High betweenness centrality (0.036) - this node is a cross-community bridge._
-- **Should `httpstatus` be split into smaller, more focused modules?**
-  _Cohesion score 0.08035714285714286 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07547169811320754 - nodes in this community are weakly interconnected._
