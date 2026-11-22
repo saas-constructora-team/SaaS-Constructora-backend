@@ -7,6 +7,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -18,6 +21,8 @@ import java.util.UUID;
  * se pueden crear, renombrar, desactivar y eliminar. El tenant se referencia
  * por ID y todas las consultas lo filtran explícitamente.
  */
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = UUID.class))
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Entity
 @Table(name = "worker_positions", uniqueConstraints = @UniqueConstraint(
         name = "uk_worker_positions_tenant_name",

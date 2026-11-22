@@ -140,8 +140,9 @@ class LoginIntegrationTest {
         // Registro abierto: cualquiera crea su empresa y queda con sesión iniciada
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyName\":\"Constructora Andina\",\"adminFullName\":\"Ana Pérez\","
-                                + "\"adminEmail\":\"ana@andina.com\",\"adminPassword\":\"Secreta123\"}"))
+                        .content("{\"companyName\":\"Constructora Andina\",\"taxId\":\"NIT-111\","
+                                + "\"address\":\"Calle Andina 123\",\"adminFullName\":\"Ana Pérez\","
+                                + "\"adminEmail\":\"ana@andina.com\",\"adminPassword\":\"Secreta123!\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken", notNullValue()))
                 .andExpect(jsonPath("$.tenant.name").value("Constructora Andina"))
@@ -152,7 +153,7 @@ class LoginIntegrationTest {
         // El admin recién creado puede autenticarse con sus credenciales
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"ana@andina.com\",\"password\":\"Secreta123\"}"))
+                        .content("{\"email\":\"ana@andina.com\",\"password\":\"Secreta123!\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken", notNullValue()))
                 .andExpect(jsonPath("$.user.role").value("ADMIN"));
@@ -162,8 +163,9 @@ class LoginIntegrationTest {
     void registroConEmailYaUsadoDevuelve409() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyName\":\"Otra Empresa\",\"adminFullName\":\"Otro\","
-                                + "\"adminEmail\":\"admin@demo.com\",\"adminPassword\":\"Secreta123\"}"))
+                        .content("{\"companyName\":\"Otra Empresa\",\"taxId\":\"NIT-222\","
+                                + "\"address\":\"Calle Otra 456\",\"adminFullName\":\"Otro\","
+                                + "\"adminEmail\":\"admin@demo.com\",\"adminPassword\":\"Secreta123!\"}"))
                 .andExpect(status().isConflict());
     }
 
@@ -266,8 +268,9 @@ class LoginIntegrationTest {
         // 1) Creamos una empresa/usuario propios para no alterar el usuario semilla
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyName\":\"Constructora Recupera\",\"adminFullName\":\"Rita Reset\","
-                                + "\"adminEmail\":\"rita@recupera.com\",\"adminPassword\":\"Original123\"}"))
+                        .content("{\"companyName\":\"Constructora Recupera\",\"taxId\":\"NIT-333\","
+                                + "\"address\":\"Calle Recupera 789\",\"adminFullName\":\"Rita Reset\","
+                                + "\"adminEmail\":\"rita@recupera.com\",\"adminPassword\":\"Original123!\"}"))
                 .andExpect(status().isCreated());
 
         // 2) Solicitar recuperación
@@ -284,25 +287,25 @@ class LoginIntegrationTest {
         // 4) Restablecer con el token
         mockMvc.perform(post("/api/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"token\":\"" + token + "\",\"newPassword\":\"NuevaClave456\"}"))
+                        .content("{\"token\":\"" + token + "\",\"newPassword\":\"NuevaClave456!\"}"))
                 .andExpect(status().isOk());
 
         // 5) La contraseña vieja ya no sirve y la nueva sí
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"rita@recupera.com\",\"password\":\"Original123\"}"))
+                        .content("{\"email\":\"rita@recupera.com\",\"password\":\"Original123!\"}"))
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"rita@recupera.com\",\"password\":\"NuevaClave456\"}"))
+                        .content("{\"email\":\"rita@recupera.com\",\"password\":\"NuevaClave456!\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken", notNullValue()));
 
         // 6) El token ya no puede reutilizarse
         mockMvc.perform(post("/api/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"token\":\"" + token + "\",\"newPassword\":\"OtraClave789\"}"))
+                        .content("{\"token\":\"" + token + "\",\"newPassword\":\"OtraClave789!\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -319,7 +322,7 @@ class LoginIntegrationTest {
     void resetPasswordConTokenInvalidoDevuelve400() throws Exception {
         mockMvc.perform(post("/api/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"token\":\"token-invalido\",\"newPassword\":\"NuevaClave456\"}"))
+                        .content("{\"token\":\"token-invalido\",\"newPassword\":\"NuevaClave456!\"}"))
                 .andExpect(status().isBadRequest());
     }
 }

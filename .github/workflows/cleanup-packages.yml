@@ -1,0 +1,28 @@
+# ============================================================
+# Limpieza de imágenes antiguas en GHCR
+# Conserva las 10 versiones más recientes y elimina las que
+# ya no tienen tag (las reemplazadas por cada push).
+# ============================================================
+name: Cleanup old images
+
+on:
+  schedule:
+    - cron: "0 4 * * 1" # lunes 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    name: Delete old package versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete untagged and old image versions
+        uses: actions/delete-package-versions@v5.0.0
+        with:
+          package-name: saas-constructora-backend
+          package-type: container
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: true

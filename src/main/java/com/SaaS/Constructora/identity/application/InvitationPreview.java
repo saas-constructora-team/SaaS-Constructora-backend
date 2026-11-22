@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public record InvitationPreview(
         String companyName,
         String email,
-        LocalDateTime expiresAt
+        LocalDateTime expiresAt,
+        boolean requiresPassword
 ) {
 }

@@ -52,6 +52,18 @@ public class PermissionManagementUseCase {
         return changePersonnelCreation(tenantId, userId, false);
     }
 
+    /** Habilita a un MEMBER para consultar candidatos a asignación de proyectos. */
+    @Transactional
+    public UserSummary enableAssignmentCandidatesView(UUID tenantId, UUID userId) {
+        return changeAssignmentCandidatesView(tenantId, userId, true);
+    }
+
+    /** Revoca el permiso de consultar candidatos a asignación de un MEMBER. */
+    @Transactional
+    public UserSummary disableAssignmentCandidatesView(UUID tenantId, UUID userId) {
+        return changeAssignmentCandidatesView(tenantId, userId, false);
+    }
+
     private UserSummary changeRole(UUID tenantId, UUID userId, Role targetRole) {
         // Valida que el usuario exista y pertenezca al tenant del solicitante.
         UserSummary target = userQueryService.ensureBelongsToTenant(userId, tenantId);
@@ -82,6 +94,18 @@ public class PermissionManagementUseCase {
         return summaryOf(target, membership);
     }
 
+    private UserSummary changeAssignmentCandidatesView(UUID tenantId, UUID userId, boolean allowed) {
+        UserSummary target = userQueryService.ensureBelongsToTenant(userId, tenantId);
+        Membership membership = requireMembership(tenantId, userId);
+
+        if (membership.isAssignmentCandidatesViewAllowed() != allowed) {
+            membership = membership.withAssignmentCandidatesViewPermission(allowed);
+            membershipRepository.save(membership);
+        }
+
+        return summaryOf(target, membership);
+    }
+
     private Membership requireMembership(UUID tenantId, UUID userId) {
         return membershipRepository.findActiveByUserIdAndTenantId(userId, tenantId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -90,6 +114,7 @@ public class PermissionManagementUseCase {
 
     private static UserSummary summaryOf(UserSummary target, Membership membership) {
         return new UserSummary(target.id(), target.email(), target.fullName(),
-                membership.getRole(), target.active(), membership.canCreatePersonnel());
+                membership.getRole(), target.active(), membership.canCreatePersonnel(),
+                membership.canViewAssignmentCandidates());
     }
 }

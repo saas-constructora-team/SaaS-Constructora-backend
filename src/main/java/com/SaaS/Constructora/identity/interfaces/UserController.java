@@ -5,9 +5,6 @@ import com.SaaS.Constructora.identity.application.UserQueryService;
 import com.SaaS.Constructora.identity.interfaces.dto.UserResponse;
 import com.SaaS.Constructora.shared.security.AuthenticatedUser;
 import com.SaaS.Constructora.shared.security.CurrentUser;
-import com.SaaS.Constructora.shared.security.TenantClaims;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,8 +15,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Listado de usuarios del tenant autenticado. Solo administradores pueden
- * consultarlo, ya que su uso principal es elegir a quién asignar un proyecto.
+ * Listado de usuarios del tenant autenticado. Los ADMIN siempre pueden
+ * consultarlo; un MEMBER solo si un ADMIN le habilitó explícitamente el
+ * permiso de consultar candidatos a asignación.
  */
 @RestController
 @RequestMapping("/api/users")
@@ -35,10 +33,9 @@ class UserController {
     }
 
     @GetMapping
-    List<UserResponse> list(@AuthenticationPrincipal Jwt jwt) {
-        TenantClaims.requireAdmin(jwt);
-        UUID tenantId = TenantClaims.requireTenantId(jwt);
-        return userQueryService.listByTenant(tenantId)
+    List<UserResponse> list(@CurrentUser AuthenticatedUser user) {
+        userQueryService.requireCanViewAssignmentCandidates(user.tenantId(), user.userId());
+        return userQueryService.listByTenant(user.tenantId())
                 .stream()
                 .map(UserResponse::from)
                 .toList();
@@ -76,5 +73,23 @@ class UserController {
         user.requireAdmin();
         return UserResponse.from(
                 permissionManagementUseCase.disablePersonnelCreation(user.tenantId(), userId));
+    }
+
+    /** Habilita a un miembro para consultar candidatos a asignación de proyectos. */
+    @PostMapping("/{userId}/assignment-candidates-view/enable")
+    UserResponse enableAssignmentCandidatesView(@CurrentUser AuthenticatedUser user,
+                                                @PathVariable UUID userId) {
+        user.requireAdmin();
+        return UserResponse.from(
+                permissionManagementUseCase.enableAssignmentCandidatesView(user.tenantId(), userId));
+    }
+
+    /** Revoca el permiso de consultar candidatos a asignación del usuario indicado. */
+    @PostMapping("/{userId}/assignment-candidates-view/disable")
+    UserResponse disableAssignmentCandidatesView(@CurrentUser AuthenticatedUser user,
+                                                 @PathVariable UUID userId) {
+        user.requireAdmin();
+        return UserResponse.from(
+                permissionManagementUseCase.disableAssignmentCandidatesView(user.tenantId(), userId));
     }
 }

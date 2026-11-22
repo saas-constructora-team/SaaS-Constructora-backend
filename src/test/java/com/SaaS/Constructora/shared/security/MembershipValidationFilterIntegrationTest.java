@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.shared.security;
 
+import com.SaaS.Constructora.identity.application.ports.UserRepository;
 import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.identity.domain.User;
@@ -39,6 +40,9 @@ class MembershipValidationFilterIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
     void tokenSinMembresiaActivaDevuelve403YNoLlegaAlControlador() throws Exception {
         UUID userId = UUID.randomUUID();
@@ -49,6 +53,23 @@ class MembershipValidationFilterIntegrationTest {
                 Role.ADMIN, true, LocalDateTime.now());
 
         String token = jwtService.generateToken(user, membership);
+
+        mockMvc.perform(get("/api/projects")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+
+        assertThat(TenantContext.getCurrentTenantId()).isEmpty();
+    }
+
+    @Test
+    void tokenDeOtraEmpresaNoAprovechaLaMembresiaDelUsuario() throws Exception {
+        // El usuario semilla solo pertenece a la empresa demo. Un token firmado
+        // para otra empresa no debe resolver el tenant desde su membresía real.
+        User user = userRepository.findByEmail("admin@demo.com").orElseThrow();
+        Membership membershipAjena = new Membership(UUID.randomUUID(), user.getId(),
+                UUID.randomUUID(), Role.ADMIN, true, LocalDateTime.now());
+
+        String token = jwtService.generateToken(user, membershipAjena);
 
         mockMvc.perform(get("/api/projects")
                         .header("Authorization", "Bearer " + token))

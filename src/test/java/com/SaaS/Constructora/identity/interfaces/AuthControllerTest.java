@@ -111,8 +111,9 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyName\":\"Constructora Nueva\",\"adminFullName\":\"Jefe Nueva\","
-                                + "\"adminEmail\":\"jefe@nueva.com\",\"adminPassword\":\"Secreta123\"}"))
+                        .content("{\"companyName\":\"Constructora Nueva\",\"taxId\":\"NIT-123\","
+                                + "\"address\":\"Calle 1 # 2-3\",\"adminFullName\":\"Jefe Nueva\","
+                                + "\"adminEmail\":\"jefe@nueva.com\",\"adminPassword\":\"Secreta123!\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken").value("jwt-token"))
                 .andExpect(jsonPath("$.tenant.slug").value("constructora-nueva"))
@@ -128,8 +129,9 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyName\":\"Otra\",\"adminFullName\":\"Admin\","
-                                + "\"adminEmail\":\"admin@demo.com\",\"adminPassword\":\"Secreta123\"}"))
+                        .content("{\"companyName\":\"Otra\",\"taxId\":\"NIT-123\","
+                                + "\"address\":\"Calle 1 # 2-3\",\"adminFullName\":\"Admin\","
+                                + "\"adminEmail\":\"admin@demo.com\",\"adminPassword\":\"Secreta123!\"}"))
                 .andExpect(status().isConflict());
     }
 
@@ -137,9 +139,46 @@ class AuthControllerTest {
     void registroConPasswordCortaDevuelve400() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyName\":\"Otra\",\"adminFullName\":\"Admin\","
+                        .content("{\"companyName\":\"Otra\",\"taxId\":\"NIT-123\","
+                                + "\"address\":\"Calle 1 # 2-3\",\"adminFullName\":\"Admin\","
                                 + "\"adminEmail\":\"jefe@nueva.com\",\"adminPassword\":\"corta\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void registroConPasswordSinSimboloDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"companyName\":\"Otra\",\"taxId\":\"NIT-123\","
+                                + "\"address\":\"Calle 1 # 2-3\",\"adminFullName\":\"Admin\","
+                                + "\"adminEmail\":\"jefe@nueva.com\",\"adminPassword\":\"Secreta123\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details.adminPassword").value(
+                        "La contraseña debe tener al menos 8 caracteres e incluir letras, números y símbolos"));
+    }
+
+    @Test
+    void registroSinTaxIdDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"companyName\":\"Otra\",\"adminFullName\":\"Admin\","
+                                + "\"taxId\":\"\",\"address\":\"Calle 1 # 2-3\","
+                                + "\"adminEmail\":\"jefe@nueva.com\","
+                                + "\"adminPassword\":\"Secreta123!\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details.taxId").exists());
+    }
+
+    @Test
+    void registroSinDireccionDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"companyName\":\"Otra\",\"adminFullName\":\"Admin\","
+                                + "\"taxId\":\"NIT-123\",\"address\":\"\","
+                                + "\"adminEmail\":\"jefe@nueva.com\","
+                                + "\"adminPassword\":\"Secreta123!\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details.address").exists());
     }
 
     @Test
@@ -222,7 +261,7 @@ class AuthControllerTest {
     void resetPasswordValidoDevuelve200() throws Exception {
         mockMvc.perform(post("/api/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"token\":\"token-valido\",\"newPassword\":\"NuevaClave123\"}"))
+                        .content("{\"token\":\"token-valido\",\"newPassword\":\"NuevaClave123!\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", notNullValue()));
     }
@@ -236,6 +275,16 @@ class AuthControllerTest {
     }
 
     @Test
+    void resetPasswordSinSimboloDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"token-valido\",\"newPassword\":\"NuevaClave123\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details.newPassword").value(
+                        "La contraseña debe tener al menos 8 caracteres e incluir letras, números y símbolos"));
+    }
+
+    @Test
     void resetPasswordConTokenInvalidoDevuelve400() throws Exception {
         org.mockito.Mockito.doThrow(new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.BAD_REQUEST, "Token inválido o expirado"))
@@ -243,7 +292,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"token\":\"malo\",\"newPassword\":\"NuevaClave123\"}"))
+                        .content("{\"token\":\"malo\",\"newPassword\":\"NuevaClave123!\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -251,13 +300,25 @@ class AuthControllerTest {
     void previewDeInvitacionValidaDevuelveDatosDelTenant() throws Exception {
         when(invitationQueryService.preview("token-valido"))
                 .thenReturn(new InvitationPreview("Constructora Demo", "obrero@demo.com",
-                        java.time.LocalDateTime.of(2026, 12, 1, 10, 0)));
+                        java.time.LocalDateTime.of(2026, 12, 1, 10, 0), true));
 
         mockMvc.perform(get("/api/auth/invitations/token-valido"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("Constructora Demo"))
                 .andExpect(jsonPath("$.email").value("obrero@demo.com"))
-                .andExpect(jsonPath("$.expiresAt").value("2026-12-01T10:00:00"));
+                .andExpect(jsonPath("$.expiresAt").value("2026-12-01T10:00:00"))
+                .andExpect(jsonPath("$.requiresPassword").value(true));
+    }
+
+    @Test
+    void previewDeInvitacionParaCuentaExistenteIndicaQueNoRequierePassword() throws Exception {
+        when(invitationQueryService.preview("token-existente"))
+                .thenReturn(new InvitationPreview("Constructora Demo", "existente@demo.com",
+                        java.time.LocalDateTime.of(2026, 12, 1, 10, 0), false));
+
+        mockMvc.perform(get("/api/auth/invitations/token-existente"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiresPassword").value(false));
     }
 
     @Test
@@ -282,7 +343,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/invitations/accept")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"token\":\"token-valido\",\"password\":\"NuevaClave123\"}"))
+                        .content("{\"token\":\"token-valido\",\"password\":\"NuevaClave123!\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("jwt-token"))
                 .andExpect(jsonPath("$.user.email").value("obrero@demo.com"))
@@ -303,5 +364,15 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"token-valido\",\"password\":\"corta\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void aceptarInvitacionSinSimboloDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/auth/invitations/accept")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"token-valido\",\"password\":\"NuevaClave123\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details.password").value(
+                        "La contraseña debe tener al menos 8 caracteres e incluir letras, números y símbolos"));
     }
 }

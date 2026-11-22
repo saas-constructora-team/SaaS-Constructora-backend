@@ -1,0 +1,41 @@
+# ============================================================
+# CodeQL — análisis estático (SAST) del backend
+# ============================================================
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * 1" # lunes 03:00 UTC
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze Java
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Java + Maven
+        uses: ./.github/actions/setup-java
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4.39.3
+        with:
+          languages: java-kotlin
+          queries: security-and-quality
+
+      - name: Build (compilación para el análisis)
+        run: ./mvnw -B -ntp clean compile -DskipTests
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4.39.3

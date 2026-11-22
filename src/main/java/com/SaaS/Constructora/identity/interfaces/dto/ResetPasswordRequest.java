@@ -1,12 +1,13 @@
 package com.SaaS.Constructora.identity.interfaces.dto;
 
+import com.SaaS.Constructora.shared.validation.PasswordPolicy;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 public record ResetPasswordRequest(
     @NotBlank(message = "El token es obligatorio")
     String token,
     @NotBlank(message = "La nueva contraseña es obligatoria")
-    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+    @Pattern(regexp = PasswordPolicy.PATTERN, message = PasswordPolicy.MESSAGE)
     String newPassword
 ) { }
