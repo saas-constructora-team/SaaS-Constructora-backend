@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.identity;
 
+import com.SaaS.Constructora.identity.application.ports.EmailSendResult;
 import com.SaaS.Constructora.identity.application.ports.EmailSender;
 import com.SaaS.Constructora.identity.application.ports.GoogleTokenVerifier;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,8 +93,9 @@ class LoginIntegrationTest {
         final List<String> sent = new ArrayList<>();
 
         @Override
-        public void sendPasswordResetEmail(String toEmail, String recipientName, String resetLink) {
+        public EmailSendResult sendPasswordResetEmail(String toEmail, String recipientName, String resetLink) {
             sent.add(resetLink);
+            return EmailSendResult.delivered("test-id");
         }
     }
 
