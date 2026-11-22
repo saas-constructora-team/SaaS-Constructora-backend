@@ -8,6 +8,9 @@ import java.util.UUID;
 /**
  * Resultado interno de emitir una invitación. La capa HTTP decide qué campos
  * expone; el token en claro nunca sale de este objeto (viaja solo por correo).
+ * <p>
+ * {@code emailSent} permite diferenciar la invitación registrada en base de
+ * datos del correo efectivamente entregado por el proveedor.
  */
 public record InvitationIssued(
         UUID membershipId,
@@ -16,6 +19,8 @@ public record InvitationIssued(
         String fullName,
         String companyName,
         MembershipStatus status,
-        LocalDateTime expiresAt
+        LocalDateTime expiresAt,
+        boolean emailSent,
+        String emailError
 ) {
 }

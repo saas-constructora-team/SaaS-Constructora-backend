@@ -50,6 +50,39 @@
    - **Invitaciones:** `INVITATION_ENABLED`, `APP_INVITATION_BASE_URL` y
      `INVITATION_TTL_HOURS` controlan el flujo `invite-and-claim`.
 
+#### Correo: verificación y solución de problemas
+
+Al arrancar, el backend registra el proveedor efectivo:
+
+```
+[EMAIL] Proveedor activo=resend, remitente=..., apiKeyConfigurada=true, apiKeyLongitud=...
+[EMAIL] Proveedor activo=smtp, remitente=..., host=smtp.gmail.com
+```
+
+Si `apiKeyConfigurada=false` o el remitente está vacío, verá un `ERROR`
+indicando que los correos **no** se enviarán. Cada intento fallido se registra
+con el motivo y el caso de uso devuelve `emailSent: false` junto a `emailError`
+en la respuesta de `POST /api/personnel/invite` y en el reenvío. La invitación
+queda registrada y se puede reintentar con `POST /api/personnel/invitations/{membershipId}/resend`.
+
+Comprobaciones habituales:
+
+1. **El proveedor activo no es el esperado.** Las variables de entorno del
+   sistema y la configuración de ejecución del IDE tienen prioridad sobre
+   `.env`. Revise el log `[EMAIL] Proveedor activo=...` antes de seguir.
+2. **Resend sin API key.** Defina `RESEND_API_KEY` y reinicie. Un mensaje
+   `RESEND_API_KEY no configurada` confirma esta causa.
+3. **Resend con remitente no verificado.** `RESEND_FROM` debe ser un correo de
+   un dominio verificado en Resend (en pruebas, `onboarding@resend.dev`). Un
+   valor sin `@` se rechaza con `RESEND_FROM inválido`.
+4. **Gmail por SMTP.** Use una *contraseña de aplicación* de 16 caracteres, no
+   la contraseña normal. Un fallo de autenticación aparece como
+   `Fallo enviando por SMTP`.
+5. **Confirmar la entrega real.** Con Resend, el log de éxito incluye el id del
+   mensaje `(id=re_...)`; búsquelo en el panel de Resend → *Emails*. Con SMTP,
+   el log confirma que el servidor aceptó el mensaje; revise además la carpeta
+   de spam del destinatario.
+
 #### Base de datos
 
 - **Opción A — PostgreSQL local:** crea la base y deja que Flyway aplique las

@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.identity;
 
+import com.SaaS.Constructora.identity.application.ports.EmailSendResult;
 import com.SaaS.Constructora.identity.application.ports.EmailSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,7 @@ class InvitationIntegrationTest {
     @BeforeEach
     void clearEmails() {
         emailSender.sent.clear();
+        emailSender.failNext = false;
     }
 
     @TestConfiguration
@@ -68,16 +70,22 @@ class InvitationIntegrationTest {
 
     static class RecordingInvitationEmailSender implements EmailSender {
         final List<String> sent = new ArrayList<>();
+        boolean failNext;
 
         @Override
-        public void sendPasswordResetEmail(String toEmail, String recipientName, String resetLink) {
+        public EmailSendResult sendPasswordResetEmail(String toEmail, String recipientName, String resetLink) {
             sent.add(resetLink);
+            return EmailSendResult.delivered("test-id");
         }
 
         @Override
-        public void sendInvitationEmail(String toEmail, String recipientName, String companyName,
-                                        String inviteLink, long expiresInHours) {
+        public EmailSendResult sendInvitationEmail(String toEmail, String recipientName, String companyName,
+                                                   String inviteLink, long expiresInHours) {
+            if (failNext) {
+                return EmailSendResult.failed("Fallo simulado del proveedor de correo");
+            }
             sent.add(inviteLink);
+            return EmailSendResult.delivered("test-id");
         }
     }
 
@@ -104,6 +112,7 @@ class InvitationIntegrationTest {
                                 + "\"position\":\"Albañil\"" + roleField + "}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("INVITED"))
+                .andExpect(jsonPath("$.emailSent").value(true))
                 .andExpect(jsonPath("$.membershipId").isNotEmpty())
                 .andExpect(jsonPath("$.userId").isNotEmpty());
 
@@ -250,5 +259,31 @@ class InvitationIntegrationTest {
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get("/api/auth/invitations/" + secondToken))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void falloDelCorreoSeReportaPeroLaInvitacionQuedaRegistrada() throws Exception {
+        String adminToken = loginAsAdmin();
+        String email = "sin-correo-" + UUID.randomUUID() + "@obra.com";
+        emailSender.failNext = true;
+
+        mockMvc.perform(post("/api/personnel/invite")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"Obrero Sin Correo\",\"documentType\":\"NATIONAL_ID\","
+                                + "\"documentNumber\":\"DOC-" + UUID.randomUUID() + "\","
+                                + "\"phone\":\"3001234567\",\"email\":\"" + email + "\","
+                                + "\"emergencyContactName\":\"Contacto Emergencia\","
+                                + "\"emergencyContactPhone\":\"3007654321\","
+                                + "\"position\":\"Albañil\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("INVITED"))
+                .andExpect(jsonPath("$.emailSent").value(false))
+                .andExpect(jsonPath("$.emailError").value("Fallo simulado del proveedor de correo"));
+
+        assertEquals(0, emailSender.sent.size());
+        assertEquals("INVITED", jdbcTemplate.queryForObject(
+                "SELECT status FROM memberships m JOIN users u ON u.id = m.user_id WHERE u.email = ?",
+                String.class, email));
     }
 }

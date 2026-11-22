@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.identity.infrastructure;
 
+import com.SaaS.Constructora.identity.application.ports.EmailSendResult;
 import com.SaaS.Constructora.identity.application.ports.EmailSender;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
@@ -13,13 +14,14 @@ import org.springframework.util.StringUtils;
 
 /**
  * Adaptador del puerto {@link EmailSender} que envía correos por SMTP (HU-13).
- *
+ * <p>
  * Se activa con {@code app.email.provider=smtp}. Pensado para desarrollo con
  * Gmail (contraseña de aplicación) u otro servidor SMTP, ya que Resend exige
  * un dominio verificado para enviar a destinatarios arbitrarios.
- *
- * Los fallos de envío se registran y no se propagan: el flujo de recuperación
- * no debe revelar si el correo existe ni romperse por un problema del proveedor.
+ * <p>
+ * Los fallos se devuelven como {@link EmailSendResult#failed(String)} con el
+ * motivo y se registran con nivel ERROR; el flujo de recuperación sigue
+ * respondiendo igual para no revelar si el correo existe (anti-enumeración).
  */
 @Component
 @ConditionalOnProperty(name = "app.email.provider", havingValue = "smtp")
@@ -31,32 +33,38 @@ class SmtpEmailSender implements EmailSender {
     private final String from;
 
     SmtpEmailSender(JavaMailSender mailSender,
-                    @Value("${app.email.from:${spring.mail.username:}}") String from) {
+                    @Value("${app.email.from:${spring.mail.username:}}") String from,
+                    @Value("${spring.mail.host:}") String host) {
         this.mailSender = mailSender;
         this.from = from;
+        log.info("[EMAIL] Proveedor activo=smtp, remitente={}, host={}", from, host);
+        if (!StringUtils.hasText(from)) {
+            log.error("[EMAIL] MAIL_FROM/MAIL_USERNAME está vacío. Los correos NO se enviarán.");
+        }
     }
 
     @Override
-    public void sendPasswordResetEmail(String toEmail, String recipientName, String resetLink) {
-        send(toEmail, "Recuperación de contraseña", EmailTemplates.passwordReset(recipientName, resetLink));
+    public EmailSendResult sendPasswordResetEmail(String toEmail, String recipientName, String resetLink) {
+        return send(toEmail, "Recuperación de contraseña", EmailTemplates.passwordReset(recipientName, resetLink));
     }
 
     @Override
-    public void sendWelcomeEmail(String toEmail, String recipientName, String companyName) {
-        send(toEmail, "¡Bienvenido a Constructora!", EmailTemplates.welcome(recipientName, companyName));
+    public EmailSendResult sendWelcomeEmail(String toEmail, String recipientName, String companyName) {
+        return send(toEmail, "¡Bienvenido a Constructora!", EmailTemplates.welcome(recipientName, companyName));
     }
 
     @Override
-    public void sendInvitationEmail(String toEmail, String recipientName, String companyName,
-                                    String inviteLink, long expiresInHours) {
-        send(toEmail, "Invitación a " + companyName,
+    public EmailSendResult sendInvitationEmail(String toEmail, String recipientName, String companyName,
+                                               String inviteLink, long expiresInHours) {
+        return send(toEmail, "Invitación a " + companyName,
                 EmailTemplates.invitation(recipientName, companyName, inviteLink, expiresInHours));
     }
 
-    private void send(String toEmail, String subject, String html) {
-        if (!StringUtils.hasText(from)) {
-            log.error("MAIL_USERNAME/MAIL_FROM no configurado: no se puede enviar \"{}\" a {}", subject, toEmail);
-            return;
+    private EmailSendResult send(String toEmail, String subject, String html) {
+        if (!StringUtils.hasText(from) || !from.contains("@")) {
+            String error = "MAIL_FROM/MAIL_USERNAME no configurado o inválido ('" + from + "')";
+            log.error("[EMAIL] No se envió \"{}\" a {}: {}", subject, toEmail, error);
+            return EmailSendResult.failed(error);
         }
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -66,9 +74,12 @@ class SmtpEmailSender implements EmailSender {
             helper.setSubject(subject);
             helper.setText(html, true);
             mailSender.send(message);
-            log.info("Correo \"{}\" enviado a {} por SMTP", subject, toEmail);
+            log.info("[EMAIL] Correo \"{}\" enviado a {} por SMTP", subject, toEmail);
+            return EmailSendResult.delivered(null);
         } catch (Exception e) {
-            log.error("Fallo enviando correo \"{}\" a {} por SMTP: {}", subject, toEmail, e.getMessage());
+            String error = "Fallo enviando por SMTP: " + e.getMessage();
+            log.error("[EMAIL] {}. Asunto=\"{}\", destinatario={}", error, subject, toEmail, e);
+            return EmailSendResult.failed(error);
         }
     }
 }

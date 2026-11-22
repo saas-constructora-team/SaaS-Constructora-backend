@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.identity.application;
 
+import com.SaaS.Constructora.identity.application.ports.EmailSendResult;
 import com.SaaS.Constructora.identity.application.ports.EmailSender;
 import com.SaaS.Constructora.identity.application.ports.MembershipInvitationRepository;
 import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
@@ -12,6 +13,8 @@ import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.identity.domain.Tenant;
 import com.SaaS.Constructora.identity.domain.User;
 import com.SaaS.Constructora.shared.security.TokenHasher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,6 +41,7 @@ import java.util.UUID;
 @Service
 public class InviteMembershipUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(InviteMembershipUseCase.class);
     private static final int MAX_TTL_HOURS = 24 * 30;
 
     private final UserRepository userRepository;
@@ -132,11 +136,16 @@ public class InviteMembershipUseCase {
                 tokenHasher.hash(rawToken), expiresAt, null, false, now));
 
         String inviteLink = baseUrl + "/invitations/accept?token=" + rawToken;
-        emailSender.sendInvitationEmail(email, user.getFullName(), tenant.getName(),
+        EmailSendResult emailResult = emailSender.sendInvitationEmail(email, user.getFullName(), tenant.getName(),
                 inviteLink, ttlHours);
+        if (!emailResult.isDelivered()) {
+            log.error("[EMAIL] Invitación registrada pero correo NO enviado a {} (membershipId={}): {}",
+                    email, membership.getId(), emailResult.error());
+        }
 
         return new InvitationIssued(membership.getId(), user.getId(), email,
-                user.getFullName(), tenant.getName(), MembershipStatus.INVITED, expiresAt);
+                user.getFullName(), tenant.getName(), MembershipStatus.INVITED, expiresAt,
+                emailResult.isDelivered(), emailResult.error());
     }
 
     private static String normalizeEmail(String rawEmail) {
