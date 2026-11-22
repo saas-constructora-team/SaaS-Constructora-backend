@@ -27,7 +27,7 @@
         <!-- Versiones que NO gestiona el BOM de Spring Boot -->
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <springdoc.version>3.2.0</springdoc.version>
-        <resend.version>4.28.0</resend.version>
+        <resend.version>4.31.0</resend.version>
         <!-- Cobertura mínima de líneas exigida por jacoco:check en CI -->
         <jacoco.minimum.line.coverage>0.80</jacoco.minimum.line.coverage>
     </properties>
