@@ -28,6 +28,8 @@
         <spring-modulith.version>2.1.1</spring-modulith.version>
         <springdoc.version>3.0.3</springdoc.version>
         <resend.version>4.28.0</resend.version>
+        <!-- AWS SDK v2: Boot 4 no gestiona este BOM; se fija explícitamente. -->
+        <aws.sdk.version>2.59.7</aws.sdk.version>
         <!-- Cobertura mínima de líneas exigida por jacoco:check en CI -->
         <jacoco.minimum.line.coverage>0.80</jacoco.minimum.line.coverage>
     </properties>
@@ -39,6 +41,13 @@
                 <groupId>org.springframework.modulith</groupId>
                 <artifactId>spring-modulith-bom</artifactId>
                 <version>${spring-modulith.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws.sdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -167,16 +176,14 @@
 
         <!-- ============================================================
              ALMACENAMIENTO EXTERNO DE ARCHIVOS (módulo documents, HU-04)
-             Pendiente de decidir dónde se guardan los planos y renders.
-             Si eligen un almacenamiento compatible con S3 (AWS S3, MinIO, etc.),
-             descomentar y verificar la versión vigente del SDK.
-
+             Neon Object Storage expone la API S3; se usa el SDK oficial con
+             path-style y las credenciales AWS_* inyectadas por "neon env pull".
+             ============================================================ -->
+        <!-- Desde SDK 2.x reciente el presigner viene incluido en este artefacto. -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
-            <version>VERIFICAR_VERSION</version>
         </dependency>
-             ============================================================ -->
 
         <!-- ============================================================
              PRUEBAS (Boot 4: un starter de test por cada starter principal)
@@ -218,6 +225,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Prueba real del adaptador S3 contra LocalStack (path-style + SigV4). -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-localstack</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

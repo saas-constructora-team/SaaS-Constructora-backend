@@ -118,6 +118,13 @@ public class ProjectService implements ProjectTenantPort {
         requireProjectOfTenant(tenantId, projectId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isUserAssignedToProject(UUID projectId, UUID tenantId, UUID userId) {
+        return assignmentRepository.existsActiveByTenantIdAndProjectIdAndUserId(
+                tenantId, projectId, userId);
+    }
+
     /**
      * Valida que el proyecto exista en el tenant y que el usuario pueda
      * acceder a él. ADMIN accede a todos; MEMBER solo a los asignados.
