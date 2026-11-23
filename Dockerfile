@@ -6,7 +6,7 @@
 # ---------------------------------------------------------------
 # Stage 1: build
 # ---------------------------------------------------------------
-FROM maven:3.9-eclipse-temurin-25 AS builder
+FROM maven:3.9-eclipse-temurin-26 AS builder
 WORKDIR /build
 
 # Cachea dependencias: solo se invalidan si cambia el pom

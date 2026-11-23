@@ -25,10 +25,10 @@
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versiones que NO gestiona el BOM de Spring Boot -->
-        <spring-modulith.version>2.1.1</spring-modulith.version>
-        <springdoc.version>3.0.3</springdoc.version>
-        <resend.version>4.28.0</resend.version>
-        <!-- AWS SDK v2: Boot 4 no gestiona este BOM; se fija explícitamente. -->
+<spring-modulith.version>2.1.2</spring-modulith.version>
+        <springdoc.version>3.2.0</springdoc.version>
+        <resend.version>4.31.0</resend.version>
+        <!-- AWS SDK v2: Boot 4 no gestiona este BOM; se fija expl�citamente. -->
         <aws.sdk.version>2.59.7</aws.sdk.version>
         <!-- Cobertura mínima de líneas exigida por jacoco:check en CI -->
         <jacoco.minimum.line.coverage>0.80</jacoco.minimum.line.coverage>
