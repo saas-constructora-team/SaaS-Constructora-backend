@@ -49,7 +49,8 @@ class MembershipRepositoryAdapter implements MembershipRepository {
                 membership.getId(), membership.getUserId(), membership.getTenantId(),
                 membership.getRole(), membership.getStatus(), membership.isActive(),
                 membership.isPersonnelCreationAllowed(),
-                membership.isAssignmentCandidatesViewAllowed(), membership.getCreatedAt()));
+                membership.isAssignmentCandidatesViewAllowed(),
+                membership.isTaskCreationAllowed(), membership.getCreatedAt()));
     }
 
     @Override
@@ -60,6 +61,6 @@ class MembershipRepositoryAdapter implements MembershipRepository {
     private Membership toDomain(MembershipJpaEntity e) {
         return new Membership(e.getId(), e.getUserId(), e.getTenantId(), e.getRole(),
                 e.getStatus(), e.isActive(), e.isCanCreatePersonnel(),
-                e.isCanViewAssignmentCandidates(), e.getCreatedAt());
+                e.isCanViewAssignmentCandidates(), e.isCanCreateTasks(), e.getCreatedAt());
     }
 }

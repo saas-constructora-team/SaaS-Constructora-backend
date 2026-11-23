@@ -64,6 +64,18 @@ public class PermissionManagementUseCase {
         return changeAssignmentCandidatesView(tenantId, userId, false);
     }
 
+    /** Habilita a un WORKER o MEMBER para crear tareas en los proyectos asignados. */
+    @Transactional
+    public UserSummary enableTaskCreation(UUID tenantId, UUID userId) {
+        return changeTaskCreation(tenantId, userId, true);
+    }
+
+    /** Revoca el permiso de creación de tareas del usuario indicado. */
+    @Transactional
+    public UserSummary disableTaskCreation(UUID tenantId, UUID userId) {
+        return changeTaskCreation(tenantId, userId, false);
+    }
+
     private UserSummary changeRole(UUID tenantId, UUID userId, Role targetRole) {
         // Valida que el usuario exista y pertenezca al tenant del solicitante.
         UserSummary target = userQueryService.ensureBelongsToTenant(userId, tenantId);
@@ -106,6 +118,18 @@ public class PermissionManagementUseCase {
         return summaryOf(target, membership);
     }
 
+    private UserSummary changeTaskCreation(UUID tenantId, UUID userId, boolean allowed) {
+        UserSummary target = userQueryService.ensureBelongsToTenant(userId, tenantId);
+        Membership membership = requireMembership(tenantId, userId);
+
+        if (membership.isTaskCreationAllowed() != allowed) {
+            membership = membership.withTaskCreationPermission(allowed);
+            membershipRepository.save(membership);
+        }
+
+        return summaryOf(target, membership);
+    }
+
     private Membership requireMembership(UUID tenantId, UUID userId) {
         return membershipRepository.findActiveByUserIdAndTenantId(userId, tenantId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -115,6 +139,6 @@ public class PermissionManagementUseCase {
     private static UserSummary summaryOf(UserSummary target, Membership membership) {
         return new UserSummary(target.id(), target.email(), target.fullName(),
                 membership.getRole(), target.active(), membership.canCreatePersonnel(),
-                membership.canViewAssignmentCandidates());
+                membership.canViewAssignmentCandidates(), membership.canCreateTasks());
     }
 }

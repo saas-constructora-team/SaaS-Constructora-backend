@@ -4,8 +4,6 @@ import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
 import com.SaaS.Constructora.identity.application.ports.UserRepository;
 import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.User;
-import com.SaaS.Constructora.identity.interfaces.dto.LoginRequest;
-import com.SaaS.Constructora.identity.interfaces.dto.LoginResponse;
 import com.SaaS.Constructora.shared.security.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,9 +37,9 @@ public class LoginUseCase {
     }
 
     @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email().toLowerCase().trim())
-                .filter(u -> passwordEncoder.matches(request.password(), u.getPasswordHash()))
+    public AuthenticationResult login(LoginCommand command) {
+        User user = userRepository.findByEmail(command.email().toLowerCase().trim())
+                .filter(u -> passwordEncoder.matches(command.password(), u.getPasswordHash()))
                 .filter(User::canAuthenticate)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED, CREDENCIALES_INVALIDAS));
@@ -54,6 +52,6 @@ public class LoginUseCase {
                         HttpStatus.UNAUTHORIZED, SIN_MEMBRESIA_ACTIVA));
 
         String token = jwtService.generateToken(user, membership);
-        return LoginResponse.from(token, jwtService.getTokenTtlSeconds(), user, membership);
+        return new AuthenticationResult(token, jwtService.getTokenTtlSeconds(), user, membership);
     }
 }

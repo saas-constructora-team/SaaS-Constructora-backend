@@ -11,11 +11,12 @@ public record UserResponse(
         String role,
         boolean active,
         boolean canCreatePersonnel,
-        boolean canViewAssignmentCandidates
+        boolean canViewAssignmentCandidates,
+        boolean canCreateTasks
 ) {
     public static UserResponse from(UserSummary user) {
         return new UserResponse(user.id(), user.email(), user.fullName(),
                 user.role().name(), user.active(), user.canCreatePersonnel(),
-                user.canViewAssignmentCandidates());
+                user.canViewAssignmentCandidates(), user.canCreateTasks());
     }
 }

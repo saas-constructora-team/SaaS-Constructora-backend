@@ -33,6 +33,13 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED, "Se requiere autenticación");
         }
-        return AuthenticatedUser.from(jwt);
+        AuthenticatedUser fromToken = AuthenticatedUser.from(jwt);
+        // El rol del token puede quedar obsoleto tras un cambio de permisos.
+        // El filtro de membresía ya consultó la BD en esta petición: esa es la
+        // autoridad vigente. Si no hay filtro (endpoints públicos), se usa el claim.
+        return TenantContext.getCurrentRole()
+                .map(role -> new AuthenticatedUser(
+                        fromToken.userId(), fromToken.tenantId(), role))
+                .orElse(fromToken);
     }
 }

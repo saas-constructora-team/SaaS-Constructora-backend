@@ -7,8 +7,6 @@ import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.identity.domain.Tenant;
 import com.SaaS.Constructora.identity.domain.User;
-import com.SaaS.Constructora.identity.interfaces.dto.RegisterTenantRequest;
-import com.SaaS.Constructora.identity.interfaces.dto.RegisterTenantResponse;
 import com.SaaS.Constructora.shared.security.JwtService;
 import com.SaaS.Constructora.shared.validation.PasswordPolicy;
 import org.springframework.http.HttpStatus;
@@ -45,7 +43,7 @@ public class RegisterTenantUseCase {
     }
 
     @Transactional
-    public RegisterTenantResponse register(RegisterTenantRequest request) {
+    public RegisterTenantResult register(RegisterTenantCommand request) {
         if (!PasswordPolicy.isValid(request.adminPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, PasswordPolicy.MESSAGE);
         }
@@ -77,7 +75,7 @@ public class RegisterTenantUseCase {
         membershipRepository.save(membership);
 
         String token = jwtService.generateToken(admin, membership);
-        return RegisterTenantResponse.from(token, jwtService.getTokenTtlSeconds(), tenant, admin, membership);
+        return new RegisterTenantResult(token, jwtService.getTokenTtlSeconds(), tenant, admin, membership);
     }
 
     /** Normaliza los datos opcionales de la empresa: recorta y convierte vacíos en null. */

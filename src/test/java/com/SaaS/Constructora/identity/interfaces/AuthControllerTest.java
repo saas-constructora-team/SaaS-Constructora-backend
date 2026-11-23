@@ -1,17 +1,20 @@
 package com.SaaS.Constructora.identity.interfaces;
 
 import com.SaaS.Constructora.identity.application.AcceptInvitationUseCase;
+import com.SaaS.Constructora.identity.application.AuthenticationResult;
+import com.SaaS.Constructora.identity.application.GoogleAuthResult;
 import com.SaaS.Constructora.identity.application.GoogleAuthUseCase;
 import com.SaaS.Constructora.identity.application.InvitationPreview;
 import com.SaaS.Constructora.identity.application.InvitationQueryService;
 import com.SaaS.Constructora.identity.application.LoginUseCase;
+import com.SaaS.Constructora.identity.application.RegisterTenantResult;
 import com.SaaS.Constructora.identity.application.RegisterTenantUseCase;
 import com.SaaS.Constructora.identity.application.RequestPasswordResetUseCase;
 import com.SaaS.Constructora.identity.application.ResetPasswordUseCase;
+import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.Role;
-import com.SaaS.Constructora.identity.interfaces.dto.GoogleAuthResponse;
-import com.SaaS.Constructora.identity.interfaces.dto.LoginResponse;
-import com.SaaS.Constructora.identity.interfaces.dto.RegisterTenantResponse;
+import com.SaaS.Constructora.identity.domain.Tenant;
+import com.SaaS.Constructora.identity.domain.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -20,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -62,10 +66,12 @@ class AuthControllerTest {
     void loginConCredenciasValidasDevuelve200YToken() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
-        LoginResponse response = new LoginResponse("jwt-token", "Bearer", 3600,
-                new LoginResponse.UserResponse(userId, tenantId, "admin@demo.com",
-                        "Administrador Demo", Role.ADMIN.name()));
-        when(loginUseCase.login(any())).thenReturn(response);
+        LocalDateTime now = LocalDateTime.now();
+        User user = new User(userId, "admin@demo.com", "Administrador Demo", "hash", true, now);
+        Membership membership = new Membership(
+                UUID.randomUUID(), userId, tenantId, Role.ADMIN, true, now);
+        when(loginUseCase.login(any()))
+                .thenReturn(new AuthenticationResult("jwt-token", 3600, user, membership));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -103,11 +109,13 @@ class AuthControllerTest {
     void registroDeEmpresaDevuelve201YToken() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
-        RegisterTenantResponse response = new RegisterTenantResponse("jwt-token", "Bearer", 3600,
-                new RegisterTenantResponse.TenantResponse(tenantId, "Constructora Nueva", "constructora-nueva"),
-                new LoginResponse.UserResponse(userId, tenantId, "jefe@nueva.com",
-                        "Jefe Nueva", Role.ADMIN.name()));
-        when(registerTenantUseCase.register(any())).thenReturn(response);
+        LocalDateTime now = LocalDateTime.now();
+        Tenant tenant = new Tenant(tenantId, "Constructora Nueva", "constructora-nueva", now);
+        User admin = new User(userId, "jefe@nueva.com", "Jefe Nueva", "hash", true, now);
+        Membership membership = new Membership(
+                UUID.randomUUID(), userId, tenantId, Role.ADMIN, true, now);
+        when(registerTenantUseCase.register(any()))
+                .thenReturn(new RegisterTenantResult("jwt-token", 3600, tenant, admin, membership));
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -185,11 +193,13 @@ class AuthControllerTest {
     void googleLoginDeCuentaExistenteDevuelve200() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
-        GoogleAuthResponse response = new GoogleAuthResponse("jwt-token", "Bearer", 3600, false,
-                new GoogleAuthResponse.TenantResponse(tenantId, "Constructora Demo", "demo"),
-                new LoginResponse.UserResponse(userId, tenantId, "ana@gmail.com",
-                        "Ana Pérez", Role.ADMIN.name()));
-        when(googleAuthUseCase.authenticate(any())).thenReturn(response);
+        LocalDateTime now = LocalDateTime.now();
+        Tenant tenant = new Tenant(tenantId, "Constructora Demo", "demo", now);
+        User user = new User(userId, "ana@gmail.com", "Ana Pérez", "hash", true, now);
+        Membership membership = new Membership(
+                UUID.randomUUID(), userId, tenantId, Role.ADMIN, true, now);
+        when(googleAuthUseCase.authenticate(any()))
+                .thenReturn(new GoogleAuthResult("jwt-token", 3600, false, tenant, user, membership));
 
         mockMvc.perform(post("/api/auth/google")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -205,11 +215,13 @@ class AuthControllerTest {
     void googleRegistroDeCuentaNuevaDevuelve201() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
-        GoogleAuthResponse response = new GoogleAuthResponse("jwt-token", "Bearer", 3600, true,
-                new GoogleAuthResponse.TenantResponse(tenantId, "Constructora Nueva", "constructora-nueva"),
-                new LoginResponse.UserResponse(userId, tenantId, "nueva@gmail.com",
-                        "Nueva Admin", Role.ADMIN.name()));
-        when(googleAuthUseCase.authenticate(any())).thenReturn(response);
+        LocalDateTime now = LocalDateTime.now();
+        Tenant tenant = new Tenant(tenantId, "Constructora Nueva", "constructora-nueva", now);
+        User user = new User(userId, "nueva@gmail.com", "Nueva Admin", "hash", true, now);
+        Membership membership = new Membership(
+                UUID.randomUUID(), userId, tenantId, Role.ADMIN, true, now);
+        when(googleAuthUseCase.authenticate(any()))
+                .thenReturn(new GoogleAuthResult("jwt-token", 3600, true, tenant, user, membership));
 
         mockMvc.perform(post("/api/auth/google")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -336,10 +348,12 @@ class AuthControllerTest {
     void aceptarInvitacionValidaDevuelve200YSesion() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
-        LoginResponse response = new LoginResponse("jwt-token", "Bearer", 3600,
-                new LoginResponse.UserResponse(userId, tenantId, "obrero@demo.com",
-                        "Obrero Demo", Role.WORKER.name()));
-        when(acceptInvitationUseCase.accept(any())).thenReturn(response);
+        LocalDateTime now = LocalDateTime.now();
+        User user = new User(userId, "obrero@demo.com", "Obrero Demo", "hash", true, now);
+        Membership membership = new Membership(
+                UUID.randomUUID(), userId, tenantId, Role.WORKER, true, now);
+        when(acceptInvitationUseCase.accept(any()))
+                .thenReturn(new AuthenticationResult("jwt-token", 3600, user, membership));
 
         mockMvc.perform(post("/api/auth/invitations/accept")
                         .contentType(MediaType.APPLICATION_JSON)

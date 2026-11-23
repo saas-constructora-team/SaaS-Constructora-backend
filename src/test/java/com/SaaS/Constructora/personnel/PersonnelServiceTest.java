@@ -1,11 +1,19 @@
 package com.SaaS.Constructora.personnel;
+import com.SaaS.Constructora.personnel.application.PersonnelService;
+import com.SaaS.Constructora.personnel.domain.DocumentType;
+import com.SaaS.Constructora.personnel.infrastructure.Worker;
+import com.SaaS.Constructora.personnel.infrastructure.WorkerPosition;
+import com.SaaS.Constructora.personnel.infrastructure.WorkerPositionRepository;
+import com.SaaS.Constructora.personnel.infrastructure.WorkerRepository;
+import com.SaaS.Constructora.personnel.interfaces.CreateWorkerRequest;
+import com.SaaS.Constructora.personnel.interfaces.WorkerResponse;
 
 import com.SaaS.Constructora.identity.application.PersonnelPermissionService;
 import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
 import com.SaaS.Constructora.identity.application.ports.UserRepository;
 import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.User;
-import com.SaaS.Constructora.projects.ProjectService;
+import com.SaaS.Constructora.projects.application.ports.ProjectTenantPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -34,14 +42,14 @@ class PersonnelServiceTest {
     private final WorkerRepository repository = mock(WorkerRepository.class);
     private final WorkerPositionRepository positionRepository =
             mock(WorkerPositionRepository.class);
-    private final ProjectService projectService = mock(ProjectService.class);
+    private final ProjectTenantPort projectTenantPort = mock(ProjectTenantPort.class);
     private final PersonnelPermissionService permissionService =
             mock(PersonnelPermissionService.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final MembershipRepository membershipRepository = mock(MembershipRepository.class);
     private final PersonnelService service =
-            new PersonnelService(repository, positionRepository, projectService, permissionService, passwordEncoder, userRepository, membershipRepository);
+            new PersonnelService(repository, positionRepository, projectTenantPort, permissionService, passwordEncoder, userRepository, membershipRepository);
 
 private static User anyUser() {
         return new User(UUID.randomUUID(), "ana@constructora.com",
@@ -82,7 +90,7 @@ private static User anyUser() {
         WorkerResponse response = service.create(tenantId, actorId, request(projectId));
 
         verify(permissionService).requireCanManagePersonnel(tenantId, actorId);
-        verify(projectService).ensureBelongsToTenant(projectId, tenantId);
+        verify(projectTenantPort).ensureBelongsToTenant(projectId, tenantId);
         assertEquals("Ana Gómez Pérez", response.fullName());
         assertEquals("NATIONAL_ID", response.documentType());
         assertEquals("1020304050", response.documentNumber());
@@ -124,7 +132,7 @@ private static User anyUser() {
 
         WorkerResponse response = service.create(tenantId, UUID.randomUUID(), request(null));
 
-        verifyNoInteractions(projectService);
+        verifyNoInteractions(projectTenantPort);
         assertEquals(null, response.projectId());
     }
 
@@ -146,7 +154,7 @@ private static User anyUser() {
         UUID tenantId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado"))
-                .when(projectService).ensureBelongsToTenant(projectId, tenantId);
+                .when(projectTenantPort).ensureBelongsToTenant(projectId, tenantId);
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
                 () -> service.create(tenantId, UUID.randomUUID(), request(projectId)));

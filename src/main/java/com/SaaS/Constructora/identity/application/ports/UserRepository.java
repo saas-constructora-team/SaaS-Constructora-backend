@@ -1,6 +1,8 @@
 package com.SaaS.Constructora.identity.application.ports;
 
+import com.SaaS.Constructora.identity.application.UserSummary;
 import com.SaaS.Constructora.identity.domain.User;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,8 +11,11 @@ import java.util.UUID;
 public interface UserRepository {
     Optional<User> findByEmail(String email);
 
-    /** Usuarios de una empresa, ordenados por nombre (listado para asignaciones). */
-    List<User> findByTenantIdOrderByFullNameAsc(UUID tenantId);
+    /** Usuarios con membresía activa, en una sola consulta, ordenados por nombre. */
+    List<UserSummary> findActiveByTenantId(UUID tenantId);
+
+    /** Igual que el método anterior, limitado a los ids solicitados. */
+    List<UserSummary> findActiveByTenantIdAndUserIdIn(UUID tenantId, Collection<UUID> userIds);
 
     /** Búsqueda por id (HU-01: login con Google). */
     Optional<User> findById(java.util.UUID id);

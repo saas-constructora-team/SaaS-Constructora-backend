@@ -1,8 +1,12 @@
 package com.SaaS.Constructora.identity.infrastructure;
 
+import com.SaaS.Constructora.identity.application.UserSummary;
 import com.SaaS.Constructora.identity.application.ports.UserRepository;
+import com.SaaS.Constructora.identity.domain.MembershipStatus;
 import com.SaaS.Constructora.identity.domain.User;
 import org.springframework.stereotype.Repository;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,11 +15,9 @@ import java.util.UUID;
 class UserRepositoryAdapter implements UserRepository {
 
     private final UserJpaRepository repository;
-    private final MembershipJpaRepository membershipRepository;
 
-    UserRepositoryAdapter(UserJpaRepository repository, MembershipJpaRepository membershipRepository) {
+    UserRepositoryAdapter(UserJpaRepository repository) {
         this.repository = repository;
-        this.membershipRepository = membershipRepository;
     }
 
     @Override
@@ -29,14 +31,22 @@ class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
-    public List<User> findByTenantIdOrderByFullNameAsc(UUID tenantId) {
-        // Buscar usuarios que tengan membresía activa en el tenant
-        return membershipRepository.findByTenantIdAndActiveTrue(
-                        tenantId, com.SaaS.Constructora.identity.domain.MembershipStatus.ACTIVE).stream()
-                .map(m -> repository.findById(m.getUserId()).orElse(null))
-                .filter(java.util.Objects::nonNull)
-                .map(UserRepositoryAdapter::toDomain)
-                .sorted(java.util.Comparator.comparing(User::getFullName))
+    public List<UserSummary> findActiveByTenantId(UUID tenantId) {
+        return repository.findActiveByTenantId(tenantId, MembershipStatus.ACTIVE)
+                .stream()
+                .map(UserRepositoryAdapter::toSummary)
+                .toList();
+    }
+
+    @Override
+    public List<UserSummary> findActiveByTenantIdAndUserIdIn(UUID tenantId, Collection<UUID> userIds) {
+        if (userIds.isEmpty()) {
+            return List.of();
+        }
+        return repository.findActiveByTenantIdAndUserIdIn(
+                        tenantId, MembershipStatus.ACTIVE, List.copyOf(userIds))
+                .stream()
+                .map(UserRepositoryAdapter::toSummary)
                 .toList();
     }
 
@@ -73,5 +83,12 @@ class UserRepositoryAdapter implements UserRepository {
     private static User toDomain(UserJpaEntity e) {
         return new User(e.getId(), e.getEmail(), e.getFullName(),
                 e.getPasswordHash(), e.isActive(), e.getCreatedAt());
+    }
+
+    private static UserSummary toSummary(ActiveUserProjection p) {
+        return new UserSummary(p.getId(), p.getEmail(), p.getFullName(), p.getRole(), p.isActive(),
+                p.getRole().canCreatePersonnel() || p.getCanCreatePersonnel(),
+                p.getRole().canViewAssignmentCandidates() || p.getCanViewAssignmentCandidates(),
+                p.getRole().canCreateTasks() || p.getCanCreateTasks());
     }
 }

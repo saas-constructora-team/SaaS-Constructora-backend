@@ -7,7 +7,7 @@
   * `application/`: Casos de Uso y Servicios de Aplicación (Validación Contextual) + `ports/`.
   * `domain/`: Entidades y Reglas de Negocio (Validación de Dominio).
   * `infrastructure/`: Implementación de Repositorios y Persistencia (adaptadores JPA).
-* **Estado actual de los módulos:** `identity` ya usa esa separación (`application/`, `domain/`, `infrastructure/`, `interfaces/`). `projects` es un módulo plano: `Project`, `ProjectRepository`, `ProjectService`, `ProjectController` y sus DTOs comparten el paquete base, y debe mantenerse así mientras no gane complejidad.
+* **Estado actual de los módulos:** `identity`, `projects` y `personnel` usan la separación en `interfaces/` (controladores y DTOs), `application/` (casos de uso y puertos), `domain/` (enums y reglas) e `infrastructure/` (entidades JPA y repositorios). `projects` expone su contrato público en `application/ports/ProjectTenantPort` y publica los eventos de integración desde `shared/events/`, de modo que `personnel` no dependa de `ProjectService` ni `audit` importe del paquete `projects`. Los servicios de aplicación todavía importan entidades y repositorios JPA de `infrastructure/`: esa es la deuda restante de inversión de dependencias.
 
 ## 2. Reglas Innegociables del Backend
 1. **Propiedad de Datos (Data Ownership):** Queda **estrictamente prohibido** el acoplamiento cruzado directo entre bases de datos de distintos módulos. Un módulo **NUNCA** ejecuta `SQL JOIN` ni consultas directas sobre las tablas de otro módulo. Debe invocar la interfaz/contrato expuesto.

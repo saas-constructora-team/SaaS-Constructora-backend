@@ -1,4 +1,11 @@
 package com.SaaS.Constructora.personnel;
+import com.SaaS.Constructora.personnel.application.WorkerPositionService;
+import com.SaaS.Constructora.personnel.infrastructure.WorkerPosition;
+import com.SaaS.Constructora.personnel.infrastructure.WorkerPositionRepository;
+import com.SaaS.Constructora.personnel.infrastructure.WorkerRepository;
+import com.SaaS.Constructora.personnel.interfaces.CreateWorkerPositionRequest;
+import com.SaaS.Constructora.personnel.interfaces.UpdateWorkerPositionRequest;
+import com.SaaS.Constructora.personnel.interfaces.WorkerPositionResponse;
 
 import com.SaaS.Constructora.identity.application.PersonnelPermissionService;
 import org.junit.jupiter.api.BeforeEach;

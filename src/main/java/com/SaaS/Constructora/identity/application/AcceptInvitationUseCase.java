@@ -6,8 +6,6 @@ import com.SaaS.Constructora.identity.application.ports.UserRepository;
 import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.MembershipInvitation;
 import com.SaaS.Constructora.identity.domain.User;
-import com.SaaS.Constructora.identity.interfaces.dto.AcceptInvitationRequest;
-import com.SaaS.Constructora.identity.interfaces.dto.LoginResponse;
 import com.SaaS.Constructora.shared.security.JwtService;
 import com.SaaS.Constructora.shared.security.TokenHasher;
 import com.SaaS.Constructora.shared.validation.PasswordPolicy;
@@ -58,7 +56,7 @@ public class AcceptInvitationUseCase {
     }
 
     @Transactional
-    public LoginResponse accept(AcceptInvitationRequest request) {
+    public AuthenticationResult accept(AcceptInvitationCommand request) {
         invitationGate.requireEnabled();
         LocalDateTime now = LocalDateTime.now();
         MembershipInvitation invitation = invitationRepository
@@ -97,6 +95,6 @@ public class AcceptInvitationUseCase {
         invitationRepository.invalidateActiveForMembership(membership.getId());
 
         String token = jwtService.generateToken(user, membership);
-        return LoginResponse.from(token, jwtService.getTokenTtlSeconds(), user, membership);
+        return new AuthenticationResult(token, jwtService.getTokenTtlSeconds(), user, membership);
     }
 }

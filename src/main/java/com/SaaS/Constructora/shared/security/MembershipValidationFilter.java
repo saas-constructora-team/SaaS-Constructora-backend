@@ -90,6 +90,7 @@ public class MembershipValidationFilter extends OncePerRequestFilter {
         try {
             UUID tenantId = membership.getTenantId();
             TenantContext.setCurrentTenantId(tenantId);
+            TenantContext.setCurrentRole(membership.getRole());
             enableTenantFilter(tenantId);
 
             filterChain.doFilter(request, response);
