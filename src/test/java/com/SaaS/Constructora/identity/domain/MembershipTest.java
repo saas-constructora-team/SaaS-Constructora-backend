@@ -15,6 +15,12 @@ class MembershipTest {
                 role, true, personnelCreationAllowed, LocalDateTime.now());
     }
 
+    private static Membership membershipWithTaskPermission(Role role, boolean taskCreationAllowed) {
+        return new Membership(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                role, MembershipStatus.ACTIVE, true, false, false,
+                taskCreationAllowed, LocalDateTime.now());
+    }
+
     @Test
     void unAdminSiemprePuedeCrearPersonal() {
         assertTrue(membership(Role.ADMIN, false).canCreatePersonnel());
@@ -68,5 +74,29 @@ class MembershipTest {
 
         assertTrue(reinvited.isInvited());
         assertFalse(reinvited.isAccessible());
+    }
+
+    @Test
+    void unAdminSiemprePuedeCrearTareas() {
+        assertTrue(membershipWithTaskPermission(Role.ADMIN, false).canCreateTasks());
+    }
+
+    @Test
+    void unWorkerSinPermisoNoPuedeCrearTareas() {
+        assertFalse(membershipWithTaskPermission(Role.WORKER, false).canCreateTasks());
+    }
+
+    @Test
+    void unWorkerConPermisoPuedeCrearTareas() {
+        assertTrue(membershipWithTaskPermission(Role.WORKER, true).canCreateTasks());
+    }
+
+    @Test
+    void elPermisoDeCrearTareasSeConservaAlCambiarDeRol() {
+        Membership updated = membershipWithTaskPermission(Role.WORKER, true)
+                .withRole(Role.MEMBER);
+
+        assertTrue(updated.isTaskCreationAllowed());
+        assertTrue(updated.canCreateTasks());
     }
 }

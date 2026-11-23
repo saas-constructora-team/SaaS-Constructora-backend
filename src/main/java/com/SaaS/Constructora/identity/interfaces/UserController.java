@@ -92,4 +92,22 @@ class UserController {
         return UserResponse.from(
                 permissionManagementUseCase.disableAssignmentCandidatesView(user.tenantId(), userId));
     }
+
+    /** Habilita a un trabajador para crear tareas en los proyectos asignados. */
+    @PostMapping("/{userId}/task-creation/enable")
+    UserResponse enableTaskCreation(@CurrentUser AuthenticatedUser user,
+                                    @PathVariable UUID userId) {
+        user.requireAdmin();
+        return UserResponse.from(
+                permissionManagementUseCase.enableTaskCreation(user.tenantId(), userId));
+    }
+
+    /** Revoca el permiso de creación de tareas del usuario indicado. */
+    @PostMapping("/{userId}/task-creation/disable")
+    UserResponse disableTaskCreation(@CurrentUser AuthenticatedUser user,
+                                     @PathVariable UUID userId) {
+        user.requireAdmin();
+        return UserResponse.from(
+                permissionManagementUseCase.disableTaskCreation(user.tenantId(), userId));
+    }
 }

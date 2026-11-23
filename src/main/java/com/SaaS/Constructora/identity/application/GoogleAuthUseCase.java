@@ -11,8 +11,6 @@ import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.identity.domain.Tenant;
 import com.SaaS.Constructora.identity.domain.User;
-import com.SaaS.Constructora.identity.interfaces.dto.GoogleAuthRequest;
-import com.SaaS.Constructora.identity.interfaces.dto.GoogleAuthResponse;
 import com.SaaS.Constructora.shared.security.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +74,7 @@ public class GoogleAuthUseCase {
     }
 
     @Transactional
-    public GoogleAuthResponse authenticate(GoogleAuthRequest request) {
+    public GoogleAuthResult authenticate(GoogleAuthCommand request) {
         GoogleTokenVerifier.GoogleAccount account = googleTokenVerifier.verify(request.idToken());
         LocalDateTime now = LocalDateTime.now();
 
@@ -182,12 +180,12 @@ public class GoogleAuthUseCase {
         }
     }
 
-    private GoogleAuthResponse session(User user, Membership membership, boolean newUser) {
+    private GoogleAuthResult session(User user, Membership membership, boolean newUser) {
         Tenant tenant = tenantRepository.findById(membership.getTenantId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.INTERNAL_SERVER_ERROR, "No se encontró la empresa del usuario"));
         String token = jwtService.generateToken(user, membership);
-        return GoogleAuthResponse.from(token, jwtService.getTokenTtlSeconds(), newUser, tenant, user, membership);
+        return new GoogleAuthResult(token, jwtService.getTokenTtlSeconds(), newUser, tenant, user, membership);
     }
 
     /**

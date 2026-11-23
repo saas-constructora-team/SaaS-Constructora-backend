@@ -211,6 +211,30 @@ class ProjectAssignmentIntegrationTest {
     }
 
     @Test
+    void desasignarConservaElHistorialYPermiteReasignar() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        Session member = createMemberSession(DEMO_TENANT, uniqueEmail("miembro"));
+        UUID projectId = createProject(demo.token(), "Proyecto reasignable " + UUID.randomUUID());
+        assign(demo.token(), projectId, member.userId());
+
+        mockMvc.perform(delete("/api/projects/{projectId}/assignments/{userId}",
+                        projectId, member.userId())
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isNoContent());
+
+        Integer activas = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM project_assignments WHERE project_id = ? "
+                        + "AND unassigned_at IS NULL", Integer.class, projectId);
+        Integer historial = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM project_assignments WHERE project_id = ?",
+                Integer.class, projectId);
+        assertEquals(0, activas);
+        assertEquals(1, historial);
+
+        assign(demo.token(), projectId, member.userId());
+    }
+
+    @Test
     void eliminarElProyectoBorraSusAsignaciones() throws Exception {
         Session demo = login("admin@demo.com", "Admin123!");
         Session member = createMemberSession(DEMO_TENANT, uniqueEmail("miembro"));

@@ -1,7 +1,17 @@
 package com.SaaS.Constructora.projects;
+import com.SaaS.Constructora.projects.application.ProjectService;
+import com.SaaS.Constructora.projects.application.ProjectStageService;
+import com.SaaS.Constructora.projects.infrastructure.ProjectStage;
+import com.SaaS.Constructora.projects.infrastructure.ProjectStageRepository;
+import com.SaaS.Constructora.projects.interfaces.CreateProjectStageRequest;
+import com.SaaS.Constructora.projects.interfaces.ProjectStageResponse;
+import com.SaaS.Constructora.projects.interfaces.UpdateProjectStageRequest;
 
 import com.SaaS.Constructora.identity.domain.Role;
+import com.SaaS.Constructora.shared.events.ProjectStageClosed;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -10,7 +20,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -23,8 +35,9 @@ class ProjectStageServiceTest {
 
     private final ProjectStageRepository repository = mock(ProjectStageRepository.class);
     private final ProjectService projectService = mock(ProjectService.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final ProjectStageService service =
-            new ProjectStageService(repository, projectService);
+            new ProjectStageService(repository, projectService, events);
 
     private final UUID tenantId = UUID.randomUUID();
     private final UUID projectId = UUID.randomUUID();
@@ -143,5 +156,63 @@ class ProjectStageServiceTest {
 
         assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
         verify(repository, never()).delete(any(ProjectStage.class));
+    }
+
+    @Test
+    void cierraLaEtapaYPublicaElEventoDeDominio() {
+        ProjectStage stage = new ProjectStage(tenantId, projectId, "Construcción", 5);
+        when(repository.findByIdAndTenantIdAndProjectId(stage.getId(), tenantId, projectId))
+                .thenReturn(Optional.of(stage));
+
+        ProjectStageResponse response = service.close(
+                tenantId, projectId, stage.getId(), userId, Role.MEMBER);
+
+        assertEquals(stage.getId(), response.id());
+        assertEquals("Construcción", response.name());
+        assertEquals(5, response.order());
+        assertNotNull(response.closedAt());
+        assertTrue(stage.isClosed());
+
+        ArgumentCaptor<ProjectStageClosed> eventCaptor =
+                ArgumentCaptor.forClass(ProjectStageClosed.class);
+        verify(events).publishEvent(eventCaptor.capture());
+        ProjectStageClosed event = eventCaptor.getValue();
+        assertEquals(tenantId, event.tenantId());
+        assertEquals(projectId, event.projectId());
+        assertEquals(stage.getId(), event.stageId());
+        assertEquals(userId, event.actorUserId());
+        assertEquals("Construcción", event.stageName());
+        assertEquals(5, event.stageOrder());
+        verify(projectService).ensureUserCanAccessProject(
+                projectId, tenantId, userId, Role.MEMBER);
+    }
+
+    @Test
+    void noCierraDosVecesLaMismaEtapa() {
+        ProjectStage stage = new ProjectStage(tenantId, projectId, "Construcción", 5);
+        stage.close();
+        when(repository.findByIdAndTenantIdAndProjectId(stage.getId(), tenantId, projectId))
+                .thenReturn(Optional.of(stage));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.close(tenantId, projectId, stage.getId(), userId, Role.ADMIN));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verifyNoInteractions(events);
+    }
+
+    @Test
+    void noRenombraUnaEtapaCerrada() {
+        ProjectStage stage = new ProjectStage(tenantId, projectId, "Construcción", 5);
+        stage.close();
+        when(repository.findByIdAndTenantIdAndProjectId(stage.getId(), tenantId, projectId))
+                .thenReturn(Optional.of(stage));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.update(tenantId, projectId, stage.getId(), userId, Role.ADMIN,
+                        new UpdateProjectStageRequest("Otro nombre")));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        assertEquals("Construcción", stage.getName());
     }
 }

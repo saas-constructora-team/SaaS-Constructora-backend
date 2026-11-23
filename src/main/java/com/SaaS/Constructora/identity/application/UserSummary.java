@@ -18,16 +18,23 @@ public record UserSummary(
         Role role,
         boolean active,
         boolean canCreatePersonnel,
-        boolean canViewAssignmentCandidates
+        boolean canViewAssignmentCandidates,
+        boolean canCreateTasks
 ) {
-    /** Constructor conservado para los consumidores que no necesitan el permiso. */
+    /** Constructor conservado para los consumidores que no necesitan los permisos. */
     public UserSummary(UUID id, String email, String fullName, Role role, boolean active) {
-        this(id, email, fullName, role, active, role.canCreatePersonnel(), role.canViewAssignmentCandidates());
+        this(id, email, fullName, role, active, role.canCreatePersonnel(),
+                role.canViewAssignmentCandidates(), role.canCreateTasks());
     }
 
     public static UserSummary from(User user, Membership membership) {
         return new UserSummary(user.getId(), user.getEmail(), user.getFullName(),
                 membership.getRole(), user.isActive(), membership.canCreatePersonnel(),
-                membership.canViewAssignmentCandidates());
+                membership.canViewAssignmentCandidates(), membership.canCreateTasks());
+    }
+
+    /** Autoridad vigente en BD para gestionar asignaciones (no viene del JWT). */
+    public boolean canManageAssignments() {
+        return role.canManageAssignments();
     }
 }

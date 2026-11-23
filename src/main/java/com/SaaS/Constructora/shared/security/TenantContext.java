@@ -1,5 +1,7 @@
 package com.SaaS.Constructora.shared.security;
 
+import com.SaaS.Constructora.identity.domain.Role;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +22,9 @@ public final class TenantContext {
 
     private static final ThreadLocal<UUID> CURRENT_TENANT_ID = new ThreadLocal<>();
 
+    /** Rol efectivo leído de la membresía activa, no del claim del JWT. */
+    private static final ThreadLocal<Role> CURRENT_ROLE = new ThreadLocal<>();
+
     private TenantContext() { }
 
     /** Asocia la petición actual con un tenant. */
@@ -32,8 +37,19 @@ public final class TenantContext {
         return Optional.ofNullable(CURRENT_TENANT_ID.get());
     }
 
+    /** Publica el rol vigente en BD para la petición en curso. */
+    public static void setCurrentRole(Role role) {
+        CURRENT_ROLE.set(Objects.requireNonNull(role, "role"));
+    }
+
+    /** Rol vigente en BD, si el filtro de membresía ya lo resolvió. */
+    public static Optional<Role> getCurrentRole() {
+        return Optional.ofNullable(CURRENT_ROLE.get());
+    }
+
     /** Limpia el contexto al terminar la petición. */
     public static void clear() {
         CURRENT_TENANT_ID.remove();
+        CURRENT_ROLE.remove();
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,14 +54,13 @@ public class UserQueryService {
     /** Usuarios de la empresa, ordenados por nombre, para elegir a quién asignar. */
     @Transactional(readOnly = true)
     public List<UserSummary> listByTenant(UUID tenantId) {
-        return userRepository.findByTenantIdOrderByFullNameAsc(tenantId)
-                .stream()
-                .map(user -> {
-                    Membership membership = membershipRepository.findActiveByUserIdAndTenantId(user.getId(), tenantId)
-                            .orElseThrow(() -> new IllegalStateException("Usuario sin membresía en su tenant"));
-                    return UserSummary.from(user, membership);
-                })
-                .toList();
+        return userRepository.findActiveByTenantId(tenantId);
+    }
+
+    /** Solo los usuarios solicitados, útil para enriquecer asignaciones. */
+    @Transactional(readOnly = true)
+    public List<UserSummary> listByTenant(UUID tenantId, Collection<UUID> userIds) {
+        return userRepository.findActiveByTenantIdAndUserIdIn(tenantId, userIds);
     }
 
     /**

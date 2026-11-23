@@ -17,26 +17,36 @@ public class Membership {
     private final boolean active;
     private final boolean personnelCreationAllowed;
     private final boolean assignmentCandidatesViewAllowed;
+    private final boolean taskCreationAllowed;
     private final LocalDateTime createdAt;
 
     public Membership(UUID id, UUID userId, UUID tenantId, Role role, boolean active, LocalDateTime createdAt) {
-        this(id, userId, tenantId, role, MembershipStatus.ACTIVE, active, false, false, createdAt);
+        this(id, userId, tenantId, role, MembershipStatus.ACTIVE, active, false, false, false, createdAt);
     }
 
     public Membership(UUID id, UUID userId, UUID tenantId, Role role, boolean active,
                       boolean personnelCreationAllowed, LocalDateTime createdAt) {
         this(id, userId, tenantId, role, MembershipStatus.ACTIVE, active,
-                personnelCreationAllowed, false, createdAt);
+                personnelCreationAllowed, false, false, createdAt);
     }
 
     public Membership(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
                       boolean active, boolean personnelCreationAllowed, LocalDateTime createdAt) {
-        this(id, userId, tenantId, role, status, active, personnelCreationAllowed, false, createdAt);
+        this(id, userId, tenantId, role, status, active,
+                personnelCreationAllowed, false, false, createdAt);
     }
 
     public Membership(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
                       boolean active, boolean personnelCreationAllowed,
                       boolean assignmentCandidatesViewAllowed, LocalDateTime createdAt) {
+        this(id, userId, tenantId, role, status, active, personnelCreationAllowed,
+                assignmentCandidatesViewAllowed, false, createdAt);
+    }
+
+    public Membership(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
+                      boolean active, boolean personnelCreationAllowed,
+                      boolean assignmentCandidatesViewAllowed, boolean taskCreationAllowed,
+                      LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.tenantId = tenantId;
@@ -45,6 +55,7 @@ public class Membership {
         this.active = active;
         this.personnelCreationAllowed = personnelCreationAllowed;
         this.assignmentCandidatesViewAllowed = assignmentCandidatesViewAllowed;
+        this.taskCreationAllowed = taskCreationAllowed;
         this.createdAt = createdAt;
     }
 
@@ -61,8 +72,17 @@ public class Membership {
                                      boolean personnelCreationAllowed,
                                      boolean assignmentCandidatesViewAllowed,
                                      LocalDateTime createdAt) {
+        return invited(id, userId, tenantId, role, personnelCreationAllowed,
+                assignmentCandidatesViewAllowed, false, createdAt);
+    }
+
+    public static Membership invited(UUID id, UUID userId, UUID tenantId, Role role,
+                                     boolean personnelCreationAllowed,
+                                     boolean assignmentCandidatesViewAllowed,
+                                     boolean taskCreationAllowed, LocalDateTime createdAt) {
         return new Membership(id, userId, tenantId, role, MembershipStatus.INVITED,
-                true, personnelCreationAllowed, assignmentCandidatesViewAllowed, createdAt);
+                true, personnelCreationAllowed, assignmentCandidatesViewAllowed,
+                taskCreationAllowed, createdAt);
     }
 
     /**
@@ -71,31 +91,40 @@ public class Membership {
      */
     public Membership withRole(Role newRole) {
         return new Membership(id, userId, tenantId, newRole, status, active,
-                personnelCreationAllowed, assignmentCandidatesViewAllowed, createdAt);
+                personnelCreationAllowed, assignmentCandidatesViewAllowed,
+                taskCreationAllowed, createdAt);
     }
 
     /** Devuelve una copia con el permiso de creación de personal actualizado. */
     public Membership withPersonnelCreationPermission(boolean allowed) {
         return new Membership(id, userId, tenantId, role, status, active, allowed,
-                assignmentCandidatesViewAllowed, createdAt);
+                assignmentCandidatesViewAllowed, taskCreationAllowed, createdAt);
     }
 
     /** Devuelve una copia con el permiso de consultar candidatos a asignación actualizado. */
     public Membership withAssignmentCandidatesViewPermission(boolean allowed) {
         return new Membership(id, userId, tenantId, role, status, active,
-                personnelCreationAllowed, allowed, createdAt);
+                personnelCreationAllowed, allowed, taskCreationAllowed, createdAt);
+    }
+
+    /** Devuelve una copia con el permiso de creación de tareas actualizado. */
+    public Membership withTaskCreationPermission(boolean allowed) {
+        return new Membership(id, userId, tenantId, role, status, active,
+                personnelCreationAllowed, assignmentCandidatesViewAllowed, allowed, createdAt);
     }
 
     /** Devuelve una copia lista para volver a invitar a una membresía no activa. */
     public Membership reinvited() {
         return new Membership(id, userId, tenantId, role, MembershipStatus.INVITED,
-                true, personnelCreationAllowed, assignmentCandidatesViewAllowed, createdAt);
+                true, personnelCreationAllowed, assignmentCandidatesViewAllowed,
+                taskCreationAllowed, createdAt);
     }
 
     /** Activa la membresía cuando la persona acepta la invitación. */
     public Membership activate() {
         return new Membership(id, userId, tenantId, role, MembershipStatus.ACTIVE,
-                true, personnelCreationAllowed, assignmentCandidatesViewAllowed, createdAt);
+                true, personnelCreationAllowed, assignmentCandidatesViewAllowed,
+                taskCreationAllowed, createdAt);
     }
 
     /**
@@ -128,6 +157,14 @@ public class Membership {
         return role.canViewAssignmentCandidates() || assignmentCandidatesViewAllowed;
     }
 
+    /**
+     * Permiso efectivo para crear tareas: un ADMIN siempre puede; un WORKER o
+     * MEMBER solo si un ADMIN le habilitó el permiso de forma explícita.
+     */
+    public boolean canCreateTasks() {
+        return role.canCreateTasks() || taskCreationAllowed;
+    }
+
     public UUID getId() { return id; }
     public UUID getUserId() { return userId; }
     public UUID getTenantId() { return tenantId; }
@@ -136,5 +173,6 @@ public class Membership {
     public boolean isActive() { return active; }
     public boolean isPersonnelCreationAllowed() { return personnelCreationAllowed; }
     public boolean isAssignmentCandidatesViewAllowed() { return assignmentCandidatesViewAllowed; }
+    public boolean isTaskCreationAllowed() { return taskCreationAllowed; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

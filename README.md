@@ -141,7 +141,12 @@ El backend es un **monolito modular**: una sola unidad desplegable, con el
 código separado por módulos de dominio (`identity`, `projects`, `site-log`,
 `documents`, `audit`). Cada módulo sigue, cuando su tamaño lo justifica, la
 separación `interfaces/` → `application/` → `domain/` → `infrastructure/`.
-`projects` se mantiene plano mientras no gane complejidad.
+`identity`, `projects` y `personnel` ya están organizados así: controladores y
+DTOs en `interfaces/`, servicios en `application/`, enums y reglas en `domain/`,
+y entidades JPA y repositorios en `infrastructure/`. El contrato público de
+`projects` está en `application/ports/ProjectTenantPort` y sus eventos de
+integración en `shared/events/`. Queda como deuda que los servicios de
+`application/` importen directamente entidades y repositorios JPA.
 
 Reglas innegociables:
 

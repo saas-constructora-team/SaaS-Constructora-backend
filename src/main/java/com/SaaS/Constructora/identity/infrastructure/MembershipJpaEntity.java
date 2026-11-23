@@ -36,29 +36,41 @@ class MembershipJpaEntity {
     @Column(name = "can_view_assignment_candidates", nullable = false)
     private boolean canViewAssignmentCandidates;
 
+    @Column(name = "can_create_tasks", nullable = false)
+    private boolean canCreateTasks;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     protected MembershipJpaEntity() { } // requerido por JPA
 
     MembershipJpaEntity(UUID id, UUID userId, UUID tenantId, Role role, boolean active, LocalDateTime createdAt) {
-        this(id, userId, tenantId, role, MembershipStatus.ACTIVE, active, false, false, createdAt);
+        this(id, userId, tenantId, role, MembershipStatus.ACTIVE, active, false, false, false, createdAt);
     }
 
     MembershipJpaEntity(UUID id, UUID userId, UUID tenantId, Role role, boolean active,
                         boolean canCreatePersonnel, LocalDateTime createdAt) {
         this(id, userId, tenantId, role, MembershipStatus.ACTIVE, active,
-                canCreatePersonnel, false, createdAt);
+                canCreatePersonnel, false, false, createdAt);
     }
 
     MembershipJpaEntity(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
                         boolean active, boolean canCreatePersonnel, LocalDateTime createdAt) {
-        this(id, userId, tenantId, role, status, active, canCreatePersonnel, false, createdAt);
+        this(id, userId, tenantId, role, status, active,
+                canCreatePersonnel, false, false, createdAt);
     }
 
     MembershipJpaEntity(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
                         boolean active, boolean canCreatePersonnel,
                         boolean canViewAssignmentCandidates, LocalDateTime createdAt) {
+        this(id, userId, tenantId, role, status, active,
+                canCreatePersonnel, canViewAssignmentCandidates, false, createdAt);
+    }
+
+    MembershipJpaEntity(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
+                        boolean active, boolean canCreatePersonnel,
+                        boolean canViewAssignmentCandidates, boolean canCreateTasks,
+                        LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.tenantId = tenantId;
@@ -67,6 +79,7 @@ class MembershipJpaEntity {
         this.active = active;
         this.canCreatePersonnel = canCreatePersonnel;
         this.canViewAssignmentCandidates = canViewAssignmentCandidates;
+        this.canCreateTasks = canCreateTasks;
         this.createdAt = createdAt;
     }
 
@@ -78,9 +91,11 @@ class MembershipJpaEntity {
     boolean isActive() { return active; }
     boolean isCanCreatePersonnel() { return canCreatePersonnel; }
     boolean isCanViewAssignmentCandidates() { return canViewAssignmentCandidates; }
+    boolean isCanCreateTasks() { return canCreateTasks; }
     LocalDateTime getCreatedAt() { return createdAt; }
 
     void setActive(boolean active) { this.active = active; }
     void setCanCreatePersonnel(boolean canCreatePersonnel) { this.canCreatePersonnel = canCreatePersonnel; }
     void setCanViewAssignmentCandidates(boolean canViewAssignmentCandidates) { this.canViewAssignmentCandidates = canViewAssignmentCandidates; }
+    void setCanCreateTasks(boolean canCreateTasks) { this.canCreateTasks = canCreateTasks; }
 }

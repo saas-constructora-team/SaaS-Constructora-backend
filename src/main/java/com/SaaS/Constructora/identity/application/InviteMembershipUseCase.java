@@ -12,10 +12,12 @@ import com.SaaS.Constructora.identity.domain.MembershipStatus;
 import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.identity.domain.Tenant;
 import com.SaaS.Constructora.identity.domain.User;
+import com.SaaS.Constructora.shared.events.MembershipRevoked;
 import com.SaaS.Constructora.shared.security.TokenHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -52,6 +54,7 @@ public class InviteMembershipUseCase {
     private final PasswordEncoder passwordEncoder;
     private final TokenHasher tokenHasher;
     private final InvitationGate invitationGate;
+    private final ApplicationEventPublisher events;
     private final String baseUrl;
     private final long ttlHours;
     private final SecureRandom random = new SecureRandom();
@@ -64,6 +67,7 @@ public class InviteMembershipUseCase {
                                    PasswordEncoder passwordEncoder,
                                    TokenHasher tokenHasher,
                                    InvitationGate invitationGate,
+                                    ApplicationEventPublisher events,
                                    @Value("${app.invitation.base-url:http://localhost:3000}") String baseUrl,
                                    @Value("${app.invitation.ttl-hours:72}") long ttlHours) {
         this.userRepository = userRepository;
@@ -74,6 +78,7 @@ public class InviteMembershipUseCase {
         this.passwordEncoder = passwordEncoder;
         this.tokenHasher = tokenHasher;
         this.invitationGate = invitationGate;
+        this.events = events;
         this.baseUrl = baseUrl;
         this.ttlHours = Math.max(1, Math.min(ttlHours, MAX_TTL_HOURS));
     }
@@ -97,6 +102,7 @@ public class InviteMembershipUseCase {
         Optional<User> existingUser = userRepository.findByEmail(email);
         User user;
         Membership membership;
+        boolean revoked = false;
 
         if (existingUser.isPresent()) {
             user = existingUser.get();
@@ -109,6 +115,7 @@ public class InviteMembershipUseCase {
                             "La persona ya es miembro activo de esta empresa");
                 }
                 membership = membership.withRole(role).reinvited();
+                revoked = true;
             } else {
                 membership = Membership.invited(
                         UUID.randomUUID(), user.getId(), tenantId, role, false, now);
@@ -126,6 +133,14 @@ public class InviteMembershipUseCase {
         }
 
         membershipRepository.save(membership);
+
+        // Re-invitar a alguien que ya tenía acceso lo suspende: projects retira
+        // sus asignaciones al consumir este evento (auditoría incluida).
+        if (revoked) {
+            events.publishEvent(new MembershipRevoked(
+                    UUID.randomUUID(), tenantId, membership.getId(), user.getId(),
+                    invitedByUserId, now));
+        }
 
         invitationRepository.invalidateActiveForMembership(membership.getId());
 

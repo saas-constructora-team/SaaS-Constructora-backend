@@ -1,9 +1,16 @@
 package com.SaaS.Constructora.identity.interfaces;
 
+import com.SaaS.Constructora.identity.application.AcceptInvitationCommand;
 import com.SaaS.Constructora.identity.application.AcceptInvitationUseCase;
+import com.SaaS.Constructora.identity.application.AuthenticationResult;
+import com.SaaS.Constructora.identity.application.GoogleAuthCommand;
+import com.SaaS.Constructora.identity.application.GoogleAuthResult;
 import com.SaaS.Constructora.identity.application.GoogleAuthUseCase;
 import com.SaaS.Constructora.identity.application.InvitationQueryService;
+import com.SaaS.Constructora.identity.application.LoginCommand;
 import com.SaaS.Constructora.identity.application.LoginUseCase;
+import com.SaaS.Constructora.identity.application.RegisterTenantCommand;
+import com.SaaS.Constructora.identity.application.RegisterTenantResult;
 import com.SaaS.Constructora.identity.application.RegisterTenantUseCase;
 import com.SaaS.Constructora.identity.application.RequestPasswordResetUseCase;
 import com.SaaS.Constructora.identity.application.ResetPasswordUseCase;
@@ -57,19 +64,32 @@ class AuthController {
 
     @PostMapping("/login")
     ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(loginUseCase.login(request));
+        AuthenticationResult result = loginUseCase.login(
+                new LoginCommand(request.email(), request.password()));
+        return ResponseEntity.ok(LoginResponse.from(
+                result.accessToken(), result.expiresInSeconds(), result.user(), result.membership()));
     }
 
     @PostMapping("/register")
     ResponseEntity<RegisterTenantResponse> register(@Valid @RequestBody RegisterTenantRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(registerTenantUseCase.register(request));
+        RegisterTenantResult result = registerTenantUseCase.register(new RegisterTenantCommand(
+                request.companyName(), request.tradeName(), request.taxId(), request.contactPhone(),
+                request.address(), request.companyEmail(), request.adminFullName(),
+                request.adminEmail(), request.adminPassword()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(RegisterTenantResponse.from(
+                result.accessToken(), result.expiresInSeconds(), result.tenant(),
+                result.admin(), result.membership()));
     }
 
     // HU-01: inicio de sesión o alta con Google. 200 si la cuenta ya existía,
     // 201 si en esta misma petición se creó la empresa + usuario.
     @PostMapping("/google")
     ResponseEntity<GoogleAuthResponse> google(@Valid @RequestBody GoogleAuthRequest request) {
-        GoogleAuthResponse response = googleAuthUseCase.authenticate(request);
+        GoogleAuthResult result = googleAuthUseCase.authenticate(
+                new GoogleAuthCommand(request.idToken(), request.companyName()));
+        GoogleAuthResponse response = GoogleAuthResponse.from(
+                result.accessToken(), result.expiresInSeconds(), result.newUser(),
+                result.tenant(), result.user(), result.membership());
         return ResponseEntity.status(response.newUser() ? HttpStatus.CREATED : HttpStatus.OK)
                 .body(response);
     }
@@ -99,6 +119,9 @@ class AuthController {
     @PostMapping("/invitations/accept")
     ResponseEntity<LoginResponse> acceptInvitation(
             @Valid @RequestBody AcceptInvitationRequest request) {
-        return ResponseEntity.ok(acceptInvitationUseCase.accept(request));
+        AuthenticationResult result = acceptInvitationUseCase.accept(
+                new AcceptInvitationCommand(request.token(), request.password()));
+        return ResponseEntity.ok(LoginResponse.from(
+                result.accessToken(), result.expiresInSeconds(), result.user(), result.membership()));
     }
 }

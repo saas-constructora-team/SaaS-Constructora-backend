@@ -54,4 +54,13 @@ public enum Role {
     public boolean canDeleteProject() {
         return isAdmin();
     }
+
+    /**
+     * Los ADMIN siempre pueden crear tareas. WORKER y MEMBER requieren que un
+     * ADMIN les conceda el permiso puntual en su membresía
+     * (ver {@link Membership#canCreateTasks()}).
+     */
+    public boolean canCreateTasks() {
+        return isAdmin();
+    }
 }
