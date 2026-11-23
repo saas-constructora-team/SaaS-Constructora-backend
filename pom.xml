@@ -10,7 +10,7 @@
         <!-- Usar el último parche de la rama 4.1.x.
              4.1.2 incluye los parches de seguridad de Jackson (3.1.7 / 2.21.7)
              y Tomcat (11.0.27) que exige el escaneo de Trivy. -->
-        <version>4.1.2</version>
+        <version>4.2.0</version>
         <relativePath/>
     </parent>
 
@@ -25,7 +25,7 @@
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versiones que NO gestiona el BOM de Spring Boot -->
-<spring-modulith.version>2.1.2</spring-modulith.version>
+<spring-modulith.version>2.2.0</spring-modulith.version>
         <springdoc.version>3.2.0</springdoc.version>
         <resend.version>4.31.0</resend.version>
         <!-- AWS SDK v2: Boot 4 no gestiona este BOM; se fija expl�citamente. -->
