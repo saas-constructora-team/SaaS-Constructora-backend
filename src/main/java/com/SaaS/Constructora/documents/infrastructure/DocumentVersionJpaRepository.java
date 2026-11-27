@@ -14,5 +14,7 @@ public interface DocumentVersionJpaRepository extends JpaRepository<DocumentVers
     Optional<DocumentVersionEntity> findByTenantIdAndDocumentIdAndId(
             UUID tenantId, UUID documentId, UUID id);
 
+    Optional<DocumentVersionEntity> findByIdAndTenantId(UUID id, UUID tenantId);
+
     boolean existsByDocumentIdAndVersionLabel(UUID documentId, String versionLabel);
 }

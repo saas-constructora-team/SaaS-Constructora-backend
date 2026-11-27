@@ -11,5 +11,7 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, UUI
     Optional<DocumentEntity> findByIdAndTenantIdAndProjectId(
             UUID id, UUID tenantId, UUID projectId);
 
+    boolean existsByIdAndTenantId(UUID id, UUID tenantId);
+
     List<DocumentEntity> findAllByTenantIdAndProjectId(UUID tenantId, UUID projectId);
 }
