@@ -1,10 +1,21 @@
 package com.SaaS.Constructora.projects.application;
+
+import com.SaaS.Constructora.documents.application.ports.FileUpload;
+import com.SaaS.Constructora.documents.application.ports.ObjectStoragePort;
+import com.SaaS.Constructora.documents.domain.AssetKind;
+import com.SaaS.Constructora.documents.domain.FilePolicy;
+import com.SaaS.Constructora.identity.application.TenantQueryService;
+import com.SaaS.Constructora.identity.domain.Role;
+import com.SaaS.Constructora.projects.application.ports.ProjectAssignmentRepository;
+import com.SaaS.Constructora.projects.application.ports.ProjectTenantPort;
+import com.SaaS.Constructora.projects.domain.ProjectPhoto;
 import com.SaaS.Constructora.projects.domain.ProjectStatus;
 import com.SaaS.Constructora.projects.domain.ProjectType;
+import com.SaaS.Constructora.projects.infrastructure.Project;
 import com.SaaS.Constructora.projects.infrastructure.ProjectArea;
 import com.SaaS.Constructora.projects.infrastructure.ProjectAreaRepository;
-import com.SaaS.Constructora.projects.infrastructure.Project;
-import com.SaaS.Constructora.projects.application.ports.ProjectAssignmentRepository;
+import com.SaaS.Constructora.projects.infrastructure.ProjectPhotoEntity;
+import com.SaaS.Constructora.projects.infrastructure.ProjectPhotoRepository;
 import com.SaaS.Constructora.projects.infrastructure.ProjectRepository;
 import com.SaaS.Constructora.projects.infrastructure.ProjectStage;
 import com.SaaS.Constructora.projects.infrastructure.ProjectStageRepository;
@@ -13,11 +24,9 @@ import com.SaaS.Constructora.projects.infrastructure.TaskStatusRepository;
 import com.SaaS.Constructora.projects.interfaces.CreateProjectRequest;
 import com.SaaS.Constructora.projects.interfaces.ProjectResponse;
 import com.SaaS.Constructora.projects.interfaces.UpdateProjectRequest;
-
-import com.SaaS.Constructora.identity.application.TenantQueryService;
-import com.SaaS.Constructora.identity.domain.Role;
-import com.SaaS.Constructora.projects.application.ports.ProjectTenantPort;
 import com.SaaS.Constructora.shared.events.ProjectCreated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +37,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.io.PushbackInputStream;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -37,6 +54,8 @@ import java.util.UUID;
 public class ProjectService implements ProjectTenantPort {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int HEADER_BYTES = 16;
+    private static final Logger log = LoggerFactory.getLogger(ProjectService.class);
 
     private final ProjectRepository repository;
     private final TenantQueryService tenantQueryService;
@@ -45,13 +64,17 @@ public class ProjectService implements ProjectTenantPort {
     private final TaskStatusRepository statusRepository;
     private final ProjectAreaRepository areaRepository;
     private final ApplicationEventPublisher events;
+    private final ProjectPhotoRepository photoRepository;
+    private final ObjectStoragePort storage;
 
     public ProjectService(ProjectRepository repository, TenantQueryService tenantQueryService,
                           ProjectAssignmentRepository assignmentRepository,
                           ProjectStageRepository stageRepository,
                           TaskStatusRepository statusRepository,
                           ProjectAreaRepository areaRepository,
-                          ApplicationEventPublisher events) {
+                          ApplicationEventPublisher events,
+                          ProjectPhotoRepository photoRepository,
+                          ObjectStoragePort storage) {
         this.repository = repository;
         this.tenantQueryService = tenantQueryService;
         this.assignmentRepository = assignmentRepository;
@@ -59,6 +82,8 @@ public class ProjectService implements ProjectTenantPort {
         this.statusRepository = statusRepository;
         this.areaRepository = areaRepository;
         this.events = events;
+        this.photoRepository = photoRepository;
+        this.storage = storage;
     }
 
     @Transactional
@@ -123,6 +148,83 @@ public class ProjectService implements ProjectTenantPort {
     public boolean isUserAssignedToProject(UUID projectId, UUID tenantId, UUID userId) {
         return assignmentRepository.existsActiveByTenantIdAndProjectIdAndUserId(
                 tenantId, projectId, userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void ensureStageBelongsToProjectAndTenant(UUID stageId, UUID projectId, UUID tenantId) {
+        stageRepository.findByIdAndTenantIdAndProjectId(stageId, tenantId, projectId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Etapa no encontrada"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void ensureStageAllowsEntries(UUID stageId) {
+        ProjectStage stage = stageRepository.findById(stageId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Etapa no encontrada"));
+        if (stage.isClosed()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "La etapa está cerrada, no permite registrar novedades");
+        }
+    }
+
+    @Override
+    @Transactional
+    public ProjectPhoto registerPhoto(UUID tenantId, UUID projectId, UUID stageId,
+                                      UUID userId, Role role, FileUpload file) {
+        requireAccessibleProject(projectId, tenantId, userId, role);
+        ensureStageBelongsToProjectAndTenant(stageId, projectId, tenantId);
+        ensureStageAllowsEntries(stageId);
+        if (file == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El archivo es obligatorio");
+        }
+
+        UUID photoId = UUID.randomUUID();
+        String name = safeFileName(file.originalName());
+        String contentType = safeContentType(file.contentType());
+        String key = "tenants/" + tenantId + "/projects/" + projectId + "/photos/"
+                + stageId + "/" + photoId + "/" + name;
+        MessageDigest digest = sha256Digest();
+        byte[] header = new byte[HEADER_BYTES];
+        try {
+            String sha256;
+            try (PushbackInputStream probe = new PushbackInputStream(file.content(), HEADER_BYTES);
+                 DigestInputStream content = new DigestInputStream(probe, digest)) {
+                int read = probe.read(header);
+                FilePolicy.validate(AssetKind.IMAGE, file.originalName(), file.contentType(),
+                        file.size(), read < 0 ? new byte[0] : Arrays.copyOf(header, read));
+                if (read > 0) {
+                    probe.unread(header, 0, read);
+                }
+                storage.store(key, content, file.size(), contentType);
+                sha256 = HexFormat.of().formatHex(digest.digest());
+            }
+            ProjectPhoto photo = new ProjectPhoto(photoId, tenantId, projectId, stageId,
+                    key, contentType, file.size(), sha256, name, userId, LocalDateTime.now());
+            photoRepository.save(new ProjectPhotoEntity(photo));
+            return photo;
+        } catch (IOException exception) {
+            compensate(key);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No se pudo leer el archivo", exception);
+        } catch (RuntimeException exception) {
+            compensate(key);
+            throw exception;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectPhoto> listPhotos(UUID tenantId, UUID projectId, UUID stageId,
+                                         UUID userId, Role role) {
+        requireAccessibleProject(projectId, tenantId, userId, role);
+        ensureStageBelongsToProjectAndTenant(stageId, projectId, tenantId);
+        return photoRepository.findByTenantIdAndProjectIdAndStageIdOrderByCreatedAtDesc(
+                        tenantId, projectId, stageId)
+                .stream()
+                .map(ProjectPhotoEntity::toDomain)
+                .toList();
     }
 
     /**
@@ -195,5 +297,45 @@ public class ProjectService implements ProjectTenantPort {
         return repository.findByIdAndTenantId(projectId, tenantId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Proyecto no encontrado"));
+    }
+
+    private MessageDigest sha256Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 no disponible en esta JVM", exception);
+        }
+    }
+
+    /** Si falla la transacción, solo hay que compensar el objeto subido a S3. */
+    private void compensate(String key) {
+        try {
+            storage.delete(key);
+        } catch (RuntimeException exception) {
+            log.warn("No se pudo eliminar el objeto {} tras un fallo al registrar la foto",
+                    key, exception);
+        }
+    }
+
+    /** Nombre seguro para la clave S3 y para el nombre original persistido. */
+    private String safeFileName(String originalName) {
+        String name = originalName == null ? "foto" : originalName.replace('\\', '/');
+        name = name.substring(name.lastIndexOf('/') + 1);
+        name = Normalizer.normalize(name, Normalizer.Form.NFKD).replaceAll("\\p{M}", "");
+        name = name.replaceAll("[^A-Za-z0-9._-]", "_");
+        name = name.replaceAll("_{2,}", "_");
+        while (name.startsWith(".")) {
+            name = name.substring(1);
+        }
+        if (name.isBlank()) {
+            name = "foto";
+        }
+        return name.length() > 100 ? name.substring(name.length() - 100) : name;
+    }
+
+    private String safeContentType(String contentType) {
+        return contentType == null || contentType.isBlank()
+                ? "application/octet-stream"
+                : contentType;
     }
 }

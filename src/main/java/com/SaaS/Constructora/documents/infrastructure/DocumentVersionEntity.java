@@ -13,7 +13,10 @@ import org.hibernate.annotations.ParamDef;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/** Versión inmutable: no se sobrescribe nunca, solo se agregan nuevas filas. */
+/**
+ * Versión de documento. En el modo append-only es inmutable; la sobrescritura
+ * actualiza su contenido sin cambiar su identidad ni su fecha de creación.
+ */
 @FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = UUID.class))
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Entity
@@ -29,7 +32,7 @@ public class DocumentVersionEntity {
     @Column(name = "document_id", nullable = false, updatable = false)
     private UUID documentId;
 
-    @Column(name = "version_label", nullable = false, length = 20)
+    @Column(name = "version_label", nullable = false, length = 20, updatable = false)
     private String versionLabel;
 
     @Column(name = "object_key", nullable = false, length = 1024)
@@ -47,11 +50,14 @@ public class DocumentVersionEntity {
     @Column(name = "original_name", nullable = false, length = 255)
     private String originalName;
 
-    @Column(name = "uploaded_by", nullable = false, updatable = false)
+    @Column(name = "uploaded_by", nullable = false)
     private UUID uploadedBy;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "changed_at", nullable = false)
+    private LocalDateTime changedAt;
 
     protected DocumentVersionEntity() { } // requerido por JPA
 
@@ -67,15 +73,29 @@ public class DocumentVersionEntity {
         this.originalName = version.originalName();
         this.uploadedBy = version.uploadedBy();
         this.createdAt = version.createdAt();
+        this.changedAt = version.changedAt() == null ? version.createdAt() : version.changedAt();
     }
 
     @PrePersist
     void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (changedAt == null) changedAt = createdAt;
+    }
+
+    /** Aplica la sobrescritura sobre la misma fila, conservando id y fecha de creación. */
+    public void applyOverwrite(DocumentVersion version) {
+        this.objectKey = version.objectKey();
+        this.contentType = version.contentType();
+        this.sizeBytes = version.sizeBytes();
+        this.sha256 = version.sha256();
+        this.originalName = version.originalName();
+        this.uploadedBy = version.uploadedBy();
+        this.changedAt = version.changedAt() == null ? LocalDateTime.now() : version.changedAt();
     }
 
     public DocumentVersion toDomain() {
         return new DocumentVersion(id, tenantId, documentId, versionLabel, objectKey,
-                contentType, sizeBytes, sha256, originalName, uploadedBy, createdAt);
+                contentType, sizeBytes, sha256, originalName, uploadedBy, createdAt,
+                changedAt == null ? createdAt : changedAt, true);
     }
 }

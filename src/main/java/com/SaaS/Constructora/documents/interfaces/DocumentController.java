@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -56,6 +57,18 @@ public class DocumentController {
         DocumentVersion version = service.addVersion(user.tenantId(), user.userId(), projectId,
                 documentId, metadata.toCommand(), toFileUpload(file));
         return ResponseEntity.status(HttpStatus.CREATED).body(DocumentVersionResponse.from(version));
+    }
+
+    /** Sobrescribe el contenido de la versión vigente sin crear otra versión. */
+    @PutMapping(value = "/{documentId}/current", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<DocumentVersionResponse> overwrite(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable UUID projectId,
+            @PathVariable UUID documentId,
+            @RequestPart("file") MultipartFile file) {
+        DocumentVersion version = service.overwrite(user.tenantId(), user.userId(), projectId,
+                documentId, toFileUpload(file));
+        return ResponseEntity.ok(DocumentVersionResponse.from(version));
     }
 
     @GetMapping

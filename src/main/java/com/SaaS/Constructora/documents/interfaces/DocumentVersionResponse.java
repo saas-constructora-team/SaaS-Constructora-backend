@@ -13,11 +13,14 @@ public record DocumentVersionResponse(
         long sizeBytes,
         String sha256,
         String originalName,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime changedAt,
+        boolean binaryAvailable
 ) {
     public static DocumentVersionResponse from(DocumentVersion version) {
         return new DocumentVersionResponse(version.id(), version.documentId(),
                 version.versionLabel(), version.contentType(), version.sizeBytes(),
-                version.sha256(), version.originalName(), version.createdAt());
+                version.sha256(), version.originalName(), version.createdAt(),
+                version.changedAt(), version.binaryAvailable());
     }
 }
