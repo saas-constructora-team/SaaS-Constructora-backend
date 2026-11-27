@@ -145,6 +145,12 @@ public class ProjectService implements ProjectTenantPort {
 
     @Override
     @Transactional(readOnly = true)
+    public String getProjectName(UUID projectId, UUID tenantId) {
+        return requireProjectOfTenant(tenantId, projectId).getName();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean isUserAssignedToProject(UUID projectId, UUID tenantId, UUID userId) {
         return assignmentRepository.existsActiveByTenantIdAndProjectIdAndUserId(
                 tenantId, projectId, userId);

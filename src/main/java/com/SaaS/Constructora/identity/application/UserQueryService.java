@@ -1,6 +1,7 @@
 package com.SaaS.Constructora.identity.application;
 
 import com.SaaS.Constructora.identity.application.ports.MembershipRepository;
+import com.SaaS.Constructora.identity.application.ports.UserQueryPort;
 import com.SaaS.Constructora.identity.application.ports.UserRepository;
 import com.SaaS.Constructora.identity.domain.Membership;
 import com.SaaS.Constructora.identity.domain.User;
@@ -18,7 +19,7 @@ import java.util.UUID;
  * consulten usuarios sin acceder a su repositorio ni a su tabla.
  */
 @Service
-public class UserQueryService {
+public class UserQueryService implements UserQueryPort {
 
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;

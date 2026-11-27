@@ -21,7 +21,8 @@ interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
                    m.role as role, u.active as active,
                    m.canCreatePersonnel as canCreatePersonnel,
                    m.canViewAssignmentCandidates as canViewAssignmentCandidates,
-                   m.canCreateTasks as canCreateTasks
+                   m.canCreateTasks as canCreateTasks,
+                   m.canManageSiteLog as canManageSiteLog
             from MembershipJpaEntity m join UserJpaEntity u on u.id = m.userId
             where m.tenantId = :tenantId and m.status = :status and m.active = true
             order by u.fullName asc
@@ -35,7 +36,8 @@ interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
                    m.role as role, u.active as active,
                    m.canCreatePersonnel as canCreatePersonnel,
                    m.canViewAssignmentCandidates as canViewAssignmentCandidates,
-                   m.canCreateTasks as canCreateTasks
+                   m.canCreateTasks as canCreateTasks,
+                   m.canManageSiteLog as canManageSiteLog
             from MembershipJpaEntity m join UserJpaEntity u on u.id = m.userId
             where m.tenantId = :tenantId and m.status = :status and m.active = true
               and u.id in :userIds

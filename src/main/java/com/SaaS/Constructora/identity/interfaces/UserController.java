@@ -110,4 +110,22 @@ class UserController {
         return UserResponse.from(
                 permissionManagementUseCase.disableTaskCreation(user.tenantId(), userId));
     }
+
+    /** Habilita a un WORKER o MEMBER para editar/eliminar entradas de la bitácora. */
+    @PostMapping("/{userId}/site-log-management/enable")
+    UserResponse enableSiteLogManagement(@CurrentUser AuthenticatedUser user,
+                                         @PathVariable UUID userId) {
+        user.requireAdmin();
+        return UserResponse.from(
+                permissionManagementUseCase.enableSiteLogManagement(user.tenantId(), userId));
+    }
+
+    /** Revoca el permiso de gestionar la bitácora del usuario indicado. */
+    @PostMapping("/{userId}/site-log-management/disable")
+    UserResponse disableSiteLogManagement(@CurrentUser AuthenticatedUser user,
+                                          @PathVariable UUID userId) {
+        user.requireAdmin();
+        return UserResponse.from(
+                permissionManagementUseCase.disableSiteLogManagement(user.tenantId(), userId));
+    }
 }

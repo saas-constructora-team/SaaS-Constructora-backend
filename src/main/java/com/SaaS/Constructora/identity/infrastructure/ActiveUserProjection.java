@@ -22,4 +22,6 @@ interface ActiveUserProjection {
     boolean getCanViewAssignmentCandidates();
 
     boolean getCanCreateTasks();
+
+    boolean getCanManageSiteLog();
 }

@@ -63,4 +63,13 @@ public enum Role {
     public boolean canCreateTasks() {
         return isAdmin();
     }
+
+    /**
+     * Los ADMIN siempre pueden editar o eliminar entradas de la bitácora. Un
+     * WORKER o MEMBER solo si un ADMIN le concedió el permiso puntual en su
+     * membresía (ver {@link Membership#canManageSiteLog()}).
+     */
+    public boolean canManageSiteLog() {
+        return isAdmin();
+    }
 }

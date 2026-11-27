@@ -89,6 +89,7 @@ class UserRepositoryAdapter implements UserRepository {
         return new UserSummary(p.getId(), p.getEmail(), p.getFullName(), p.getRole(), p.isActive(),
                 p.getRole().canCreatePersonnel() || p.getCanCreatePersonnel(),
                 p.getRole().canViewAssignmentCandidates() || p.getCanViewAssignmentCandidates(),
-                p.getRole().canCreateTasks() || p.getCanCreateTasks());
+                p.getRole().canCreateTasks() || p.getCanCreateTasks(),
+                p.getRole().canManageSiteLog() || p.getCanManageSiteLog());
     }
 }

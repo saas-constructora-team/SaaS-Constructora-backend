@@ -76,6 +76,18 @@ public class PermissionManagementUseCase {
         return changeTaskCreation(tenantId, userId, false);
     }
 
+    /** Habilita a un WORKER o MEMBER para editar/eliminar entradas de la bitácora. */
+    @Transactional
+    public UserSummary enableSiteLogManagement(UUID tenantId, UUID userId) {
+        return changeSiteLogManagement(tenantId, userId, true);
+    }
+
+    /** Revoca el permiso de gestionar la bitácora del usuario indicado. */
+    @Transactional
+    public UserSummary disableSiteLogManagement(UUID tenantId, UUID userId) {
+        return changeSiteLogManagement(tenantId, userId, false);
+    }
+
     private UserSummary changeRole(UUID tenantId, UUID userId, Role targetRole) {
         // Valida que el usuario exista y pertenezca al tenant del solicitante.
         UserSummary target = userQueryService.ensureBelongsToTenant(userId, tenantId);
@@ -130,6 +142,18 @@ public class PermissionManagementUseCase {
         return summaryOf(target, membership);
     }
 
+    private UserSummary changeSiteLogManagement(UUID tenantId, UUID userId, boolean allowed) {
+        UserSummary target = userQueryService.ensureBelongsToTenant(userId, tenantId);
+        Membership membership = requireMembership(tenantId, userId);
+
+        if (membership.isSiteLogManagementAllowed() != allowed) {
+            membership = membership.withSiteLogManagementPermission(allowed);
+            membershipRepository.save(membership);
+        }
+
+        return summaryOf(target, membership);
+    }
+
     private Membership requireMembership(UUID tenantId, UUID userId) {
         return membershipRepository.findActiveByUserIdAndTenantId(userId, tenantId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -139,6 +163,7 @@ public class PermissionManagementUseCase {
     private static UserSummary summaryOf(UserSummary target, Membership membership) {
         return new UserSummary(target.id(), target.email(), target.fullName(),
                 membership.getRole(), target.active(), membership.canCreatePersonnel(),
-                membership.canViewAssignmentCandidates(), membership.canCreateTasks());
+                membership.canViewAssignmentCandidates(), membership.canCreateTasks(),
+                membership.canManageSiteLog());
     }
 }
