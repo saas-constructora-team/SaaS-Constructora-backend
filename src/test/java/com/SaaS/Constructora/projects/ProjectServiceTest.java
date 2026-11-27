@@ -1,11 +1,19 @@
 package com.SaaS.Constructora.projects;
+
+import com.SaaS.Constructora.documents.application.ports.FileUpload;
+import com.SaaS.Constructora.documents.application.ports.ObjectStoragePort;
+import com.SaaS.Constructora.identity.application.TenantQueryService;
+import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.projects.application.ProjectService;
+import com.SaaS.Constructora.projects.application.ports.ProjectAssignmentRepository;
 import com.SaaS.Constructora.projects.domain.AreaTipo;
+import com.SaaS.Constructora.projects.domain.ProjectPhoto;
 import com.SaaS.Constructora.projects.domain.ProjectStatus;
 import com.SaaS.Constructora.projects.infrastructure.Project;
 import com.SaaS.Constructora.projects.infrastructure.ProjectArea;
 import com.SaaS.Constructora.projects.infrastructure.ProjectAreaRepository;
-import com.SaaS.Constructora.projects.application.ports.ProjectAssignmentRepository;
+import com.SaaS.Constructora.projects.infrastructure.ProjectPhotoEntity;
+import com.SaaS.Constructora.projects.infrastructure.ProjectPhotoRepository;
 import com.SaaS.Constructora.projects.infrastructure.ProjectRepository;
 import com.SaaS.Constructora.projects.infrastructure.ProjectStage;
 import com.SaaS.Constructora.projects.infrastructure.ProjectStageRepository;
@@ -14,9 +22,6 @@ import com.SaaS.Constructora.projects.infrastructure.TaskStatusRepository;
 import com.SaaS.Constructora.projects.interfaces.CreateProjectRequest;
 import com.SaaS.Constructora.projects.interfaces.ProjectResponse;
 import com.SaaS.Constructora.projects.interfaces.UpdateProjectRequest;
-
-import com.SaaS.Constructora.identity.application.TenantQueryService;
-import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.shared.events.ProjectCreated;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -29,11 +34,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -55,9 +63,11 @@ class ProjectServiceTest {
     private final TaskStatusRepository statusRepository = mock(TaskStatusRepository.class);
     private final ProjectAreaRepository areaRepository = mock(ProjectAreaRepository.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final ProjectPhotoRepository photoRepository = mock(ProjectPhotoRepository.class);
+    private final ObjectStoragePort storage = mock(ObjectStoragePort.class);
     private final ProjectService service = new ProjectService(
             repository, tenantQueryService, assignmentRepository, stageRepository,
-            statusRepository, areaRepository, events);
+            statusRepository, areaRepository, events, photoRepository, storage);
 
     @SuppressWarnings("unchecked")
     @Test
@@ -368,5 +378,64 @@ class ProjectServiceTest {
 
         assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
         verify(repository, never()).delete(any(Project.class));
+    }
+
+    @Test
+    void registraLaFotoComoMetadatosYReferenciaDeAlmacenamiento() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        ProjectStage stage = new ProjectStage(tenantId, projectId, "Construcción", 5);
+        UUID stageId = stage.getId();
+        when(repository.findByIdAndTenantId(projectId, tenantId))
+                .thenReturn(Optional.of(new Project(tenantId, "Proyecto", null, null)));
+        when(stageRepository.findByIdAndTenantIdAndProjectId(stageId, tenantId, projectId))
+                .thenReturn(Optional.of(stage));
+        when(stageRepository.findById(stageId)).thenReturn(Optional.of(stage));
+
+        byte[] png = new byte[16];
+        System.arraycopy(new byte[]{(byte) 0x89, 'P', 'N', 'G', 13, 10, 26, 10},
+                0, png, 0, 8);
+        FileUpload file = new FileUpload(new ByteArrayInputStream(png),
+                "Foto obra.png", "image/png", png.length);
+
+        ProjectPhoto photo = service.registerPhoto(
+                tenantId, projectId, stageId, userId, Role.ADMIN, file);
+
+        assertEquals(projectId, photo.projectId());
+        assertEquals(stageId, photo.stageId());
+        assertEquals(userId, photo.uploadedBy());
+        assertTrue(photo.objectKey().contains("/photos/" + stageId + "/"));
+        assertFalse(photo.objectKey().contains("Foto obra"));
+        assertNotNull(photo.sha256());
+        verify(storage).store(eq(photo.objectKey()), any(), eq((long) png.length), eq("image/png"));
+
+        ArgumentCaptor<ProjectPhotoEntity> captor =
+                ArgumentCaptor.forClass(ProjectPhotoEntity.class);
+        verify(photoRepository).save(captor.capture());
+        assertEquals(photo.objectKey(), captor.getValue().toDomain().objectKey());
+    }
+
+    @Test
+    void noRegistraFotoEnUnaEtapaCerrada() {
+        UUID tenantId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        ProjectStage stage = new ProjectStage(tenantId, projectId, "Construcción", 5);
+        stage.close();
+        UUID stageId = stage.getId();
+        when(repository.findByIdAndTenantId(projectId, tenantId))
+                .thenReturn(Optional.of(new Project(tenantId, "Proyecto", null, null)));
+        when(stageRepository.findByIdAndTenantIdAndProjectId(stageId, tenantId, projectId))
+                .thenReturn(Optional.of(stage));
+        when(stageRepository.findById(stageId)).thenReturn(Optional.of(stage));
+        FileUpload file = new FileUpload(new ByteArrayInputStream(new byte[16]),
+                "foto.png", "image/png", 16);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.registerPhoto(tenantId, projectId, stageId, userId, Role.ADMIN, file));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verifyNoInteractions(storage, photoRepository);
     }
 }
