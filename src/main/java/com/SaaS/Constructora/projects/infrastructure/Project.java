@@ -95,6 +95,20 @@ public class Project {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** Etapa en curso compartida por todos los miembros con acceso al proyecto. */
+    @Column(name = "current_stage_id")
+    private UUID currentStageId;
+
+    @Column(name = "stage_updated_at")
+    private LocalDateTime stageUpdatedAt;
+
+    @Column(name = "stage_updated_by")
+    private UUID stageUpdatedBy;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private int version;
+
     protected Project() { } // requerido por JPA
 
     public Project(UUID tenantId, ProjectDetails details) {
@@ -119,6 +133,13 @@ public class Project {
     /** Actualiza los datos editables del proyecto; el tenant y el estado no cambian. */
     public void updateDetails(ProjectDetails details) {
         applyDetails(details);
+    }
+
+    /** Selecciona la etapa en curso y registra quién y cuándo la cambió. */
+    public void selectCurrentStage(UUID stageId, UUID userId, LocalDateTime at) {
+        this.currentStageId = stageId;
+        this.stageUpdatedBy = userId;
+        this.stageUpdatedAt = at;
     }
 
     private void applyDetails(ProjectDetails details) {
@@ -166,4 +187,8 @@ public class Project {
     public boolean isHasSitePhotos() { return hasSitePhotos; }
     public ProjectStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public UUID getCurrentStageId() { return currentStageId; }
+    public LocalDateTime getStageUpdatedAt() { return stageUpdatedAt; }
+    public UUID getStageUpdatedBy() { return stageUpdatedBy; }
+    public int getVersion() { return version; }
 }

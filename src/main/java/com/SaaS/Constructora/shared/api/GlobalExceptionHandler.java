@@ -1,6 +1,7 @@
 package com.SaaS.Constructora.shared.api;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -40,6 +41,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status)
                 .body(ApiError.of(status.value(), status.getReasonPhrase(),
                         "La operación entra en conflicto con un recurso existente"));
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ResponseEntity<ApiError> handleConcurrentChange(OptimisticLockingFailureException exception) {
+        HttpStatus status = HttpStatus.CONFLICT;
+        return ResponseEntity.status(status)
+                .body(ApiError.of(status.value(), status.getReasonPhrase(),
+                        "Otra persona realizó un cambio antes; vuelve a cargar los datos"));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

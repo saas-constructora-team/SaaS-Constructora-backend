@@ -3,8 +3,10 @@ package com.SaaS.Constructora.sitelog.application;
 import com.SaaS.Constructora.documents.application.ports.DocumentTenantPort;
 import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.projects.application.ports.ProjectTenantPort;
+import com.SaaS.Constructora.shared.events.ProjectChanged;
 import com.SaaS.Constructora.sitelog.application.ports.SiteLogRepository;
 import com.SaaS.Constructora.sitelog.domain.SiteLogEntry;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,12 +27,14 @@ public class SiteLogService {
     private final SiteLogRepository repository;
     private final ProjectTenantPort projects;
     private final DocumentTenantPort documents;
+    private final ApplicationEventPublisher events;
 
     public SiteLogService(SiteLogRepository repository, ProjectTenantPort projects,
-                          DocumentTenantPort documents) {
+                          DocumentTenantPort documents, ApplicationEventPublisher events) {
         this.repository = repository;
         this.projects = projects;
         this.documents = documents;
+        this.events = events;
     }
 
     @Transactional
@@ -49,8 +53,11 @@ public class SiteLogService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "El documento ya está asociado a una etapa");
         }
-        return repository.save(new SiteLogEntry(UUID.randomUUID(), tenantId, projectId,
-                stageId, documentId, userId, LocalDateTime.now()));
+        SiteLogEntry saved = repository.save(new SiteLogEntry(UUID.randomUUID(), tenantId,
+                projectId, stageId, documentId, userId, LocalDateTime.now()));
+        events.publishEvent(ProjectChanged.of(tenantId, projectId,
+                ProjectChanged.SITE_LOG, saved.id(), userId));
+        return saved;
     }
 
     @Transactional(readOnly = true)

@@ -24,6 +24,7 @@ import com.SaaS.Constructora.projects.infrastructure.TaskStatusRepository;
 import com.SaaS.Constructora.projects.interfaces.CreateProjectRequest;
 import com.SaaS.Constructora.projects.interfaces.ProjectResponse;
 import com.SaaS.Constructora.projects.interfaces.UpdateProjectRequest;
+import com.SaaS.Constructora.shared.events.ProjectChanged;
 import com.SaaS.Constructora.shared.events.ProjectCreated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,6 +146,12 @@ public class ProjectService implements ProjectTenantPort {
 
     @Override
     @Transactional(readOnly = true)
+    public String getProjectName(UUID projectId, UUID tenantId) {
+        return requireProjectOfTenant(tenantId, projectId).getName();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean isUserAssignedToProject(UUID projectId, UUID tenantId, UUID userId) {
         return assignmentRepository.existsActiveByTenantIdAndProjectIdAndUserId(
                 tenantId, projectId, userId);
@@ -204,6 +211,8 @@ public class ProjectService implements ProjectTenantPort {
             ProjectPhoto photo = new ProjectPhoto(photoId, tenantId, projectId, stageId,
                     key, contentType, file.size(), sha256, name, userId, LocalDateTime.now());
             photoRepository.save(new ProjectPhotoEntity(photo));
+            events.publishEvent(ProjectChanged.of(tenantId, projectId,
+                    ProjectChanged.DOCUMENT, photo.id(), userId));
             return photo;
         } catch (IOException exception) {
             compensate(key);
@@ -249,6 +258,8 @@ public class ProjectService implements ProjectTenantPort {
                                   UpdateProjectRequest req) {
         Project project = requireAccessibleProject(projectId, tenantId, userId, role);
         project.updateDetails(req.toDetails());
+        events.publishEvent(ProjectChanged.of(tenantId, projectId,
+                ProjectChanged.PROJECT, projectId, userId));
         return ProjectResponse.from(project);
     }
 
@@ -256,6 +267,8 @@ public class ProjectService implements ProjectTenantPort {
     public void delete(UUID tenantId, UUID projectId, UUID userId, Role role) {
         requireCanDelete(role);
         repository.delete(requireProjectOfTenant(tenantId, projectId));
+        events.publishEvent(ProjectChanged.of(tenantId, projectId,
+                ProjectChanged.PROJECT, projectId, userId));
     }
 
     private void requireCanCreate(Role role) {

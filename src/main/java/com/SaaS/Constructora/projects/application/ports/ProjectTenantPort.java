@@ -14,6 +14,9 @@ public interface ProjectTenantPort {
 
     void ensureBelongsToTenant(UUID projectId, UUID tenantId);
 
+    /** Nombre del proyecto dentro del tenant, para enriquecer respuestas de otros módulos. */
+    String getProjectName(UUID projectId, UUID tenantId);
+
     /**
      * Indica si el usuario tiene una asignación activa al proyecto dentro del
      * tenant. Otros módulos lo usan para aplicar sus propias reglas de acceso

@@ -39,6 +39,9 @@ class MembershipJpaEntity {
     @Column(name = "can_create_tasks", nullable = false)
     private boolean canCreateTasks;
 
+    @Column(name = "can_manage_site_log", nullable = false)
+    private boolean canManageSiteLog;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -71,6 +74,14 @@ class MembershipJpaEntity {
                         boolean active, boolean canCreatePersonnel,
                         boolean canViewAssignmentCandidates, boolean canCreateTasks,
                         LocalDateTime createdAt) {
+        this(id, userId, tenantId, role, status, active, canCreatePersonnel,
+                canViewAssignmentCandidates, canCreateTasks, false, createdAt);
+    }
+
+    MembershipJpaEntity(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
+                        boolean active, boolean canCreatePersonnel,
+                        boolean canViewAssignmentCandidates, boolean canCreateTasks,
+                        boolean canManageSiteLog, LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.tenantId = tenantId;
@@ -80,6 +91,7 @@ class MembershipJpaEntity {
         this.canCreatePersonnel = canCreatePersonnel;
         this.canViewAssignmentCandidates = canViewAssignmentCandidates;
         this.canCreateTasks = canCreateTasks;
+        this.canManageSiteLog = canManageSiteLog;
         this.createdAt = createdAt;
     }
 
@@ -92,10 +104,12 @@ class MembershipJpaEntity {
     boolean isCanCreatePersonnel() { return canCreatePersonnel; }
     boolean isCanViewAssignmentCandidates() { return canViewAssignmentCandidates; }
     boolean isCanCreateTasks() { return canCreateTasks; }
+    boolean isCanManageSiteLog() { return canManageSiteLog; }
     LocalDateTime getCreatedAt() { return createdAt; }
 
     void setActive(boolean active) { this.active = active; }
     void setCanCreatePersonnel(boolean canCreatePersonnel) { this.canCreatePersonnel = canCreatePersonnel; }
     void setCanViewAssignmentCandidates(boolean canViewAssignmentCandidates) { this.canViewAssignmentCandidates = canViewAssignmentCandidates; }
     void setCanCreateTasks(boolean canCreateTasks) { this.canCreateTasks = canCreateTasks; }
+    void setCanManageSiteLog(boolean canManageSiteLog) { this.canManageSiteLog = canManageSiteLog; }
 }

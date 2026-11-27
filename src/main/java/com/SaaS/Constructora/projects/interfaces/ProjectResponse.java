@@ -33,7 +33,8 @@ public record ProjectResponse(
         boolean hasPreviousPlans,
         boolean hasSitePhotos,
         ProjectStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        UUID currentStageId
 ) {
     public static ProjectResponse from(Project p) {
         return new ProjectResponse(
@@ -43,6 +44,6 @@ public record ProjectResponse(
                 p.getStyleReferences(), p.getBudgetRange(), p.getEstimatedStartDate(),
                 p.getEstimatedDeliveryDate(), p.getLotOwnership(), p.isHasDeeds(),
                 p.isHasTopographicSurvey(), p.isHasPreviousPlans(), p.isHasSitePhotos(),
-                p.getStatus(), p.getCreatedAt());
+                p.getStatus(), p.getCreatedAt(), p.getCurrentStageId());
     }
 }

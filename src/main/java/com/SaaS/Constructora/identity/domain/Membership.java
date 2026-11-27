@@ -18,6 +18,7 @@ public class Membership {
     private final boolean personnelCreationAllowed;
     private final boolean assignmentCandidatesViewAllowed;
     private final boolean taskCreationAllowed;
+    private final boolean siteLogManagementAllowed;
     private final LocalDateTime createdAt;
 
     public Membership(UUID id, UUID userId, UUID tenantId, Role role, boolean active, LocalDateTime createdAt) {
@@ -47,6 +48,14 @@ public class Membership {
                       boolean active, boolean personnelCreationAllowed,
                       boolean assignmentCandidatesViewAllowed, boolean taskCreationAllowed,
                       LocalDateTime createdAt) {
+        this(id, userId, tenantId, role, status, active, personnelCreationAllowed,
+                assignmentCandidatesViewAllowed, taskCreationAllowed, false, createdAt);
+    }
+
+    public Membership(UUID id, UUID userId, UUID tenantId, Role role, MembershipStatus status,
+                      boolean active, boolean personnelCreationAllowed,
+                      boolean assignmentCandidatesViewAllowed, boolean taskCreationAllowed,
+                      boolean siteLogManagementAllowed, LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.tenantId = tenantId;
@@ -56,6 +65,7 @@ public class Membership {
         this.personnelCreationAllowed = personnelCreationAllowed;
         this.assignmentCandidatesViewAllowed = assignmentCandidatesViewAllowed;
         this.taskCreationAllowed = taskCreationAllowed;
+        this.siteLogManagementAllowed = siteLogManagementAllowed;
         this.createdAt = createdAt;
     }
 
@@ -80,9 +90,18 @@ public class Membership {
                                      boolean personnelCreationAllowed,
                                      boolean assignmentCandidatesViewAllowed,
                                      boolean taskCreationAllowed, LocalDateTime createdAt) {
+        return invited(id, userId, tenantId, role, personnelCreationAllowed,
+                assignmentCandidatesViewAllowed, taskCreationAllowed, false, createdAt);
+    }
+
+    public static Membership invited(UUID id, UUID userId, UUID tenantId, Role role,
+                                     boolean personnelCreationAllowed,
+                                     boolean assignmentCandidatesViewAllowed,
+                                     boolean taskCreationAllowed, boolean siteLogManagementAllowed,
+                                     LocalDateTime createdAt) {
         return new Membership(id, userId, tenantId, role, MembershipStatus.INVITED,
                 true, personnelCreationAllowed, assignmentCandidatesViewAllowed,
-                taskCreationAllowed, createdAt);
+                taskCreationAllowed, siteLogManagementAllowed, createdAt);
     }
 
     /**
@@ -92,39 +111,49 @@ public class Membership {
     public Membership withRole(Role newRole) {
         return new Membership(id, userId, tenantId, newRole, status, active,
                 personnelCreationAllowed, assignmentCandidatesViewAllowed,
-                taskCreationAllowed, createdAt);
+                taskCreationAllowed, siteLogManagementAllowed, createdAt);
     }
 
     /** Devuelve una copia con el permiso de creación de personal actualizado. */
     public Membership withPersonnelCreationPermission(boolean allowed) {
         return new Membership(id, userId, tenantId, role, status, active, allowed,
-                assignmentCandidatesViewAllowed, taskCreationAllowed, createdAt);
+                assignmentCandidatesViewAllowed, taskCreationAllowed,
+                siteLogManagementAllowed, createdAt);
     }
 
     /** Devuelve una copia con el permiso de consultar candidatos a asignación actualizado. */
     public Membership withAssignmentCandidatesViewPermission(boolean allowed) {
         return new Membership(id, userId, tenantId, role, status, active,
-                personnelCreationAllowed, allowed, taskCreationAllowed, createdAt);
+                personnelCreationAllowed, allowed, taskCreationAllowed,
+                siteLogManagementAllowed, createdAt);
     }
 
     /** Devuelve una copia con el permiso de creación de tareas actualizado. */
     public Membership withTaskCreationPermission(boolean allowed) {
         return new Membership(id, userId, tenantId, role, status, active,
-                personnelCreationAllowed, assignmentCandidatesViewAllowed, allowed, createdAt);
+                personnelCreationAllowed, assignmentCandidatesViewAllowed, allowed,
+                siteLogManagementAllowed, createdAt);
+    }
+
+    /** Devuelve una copia con el permiso de gestionar la bitácora actualizado. */
+    public Membership withSiteLogManagementPermission(boolean allowed) {
+        return new Membership(id, userId, tenantId, role, status, active,
+                personnelCreationAllowed, assignmentCandidatesViewAllowed,
+                taskCreationAllowed, allowed, createdAt);
     }
 
     /** Devuelve una copia lista para volver a invitar a una membresía no activa. */
     public Membership reinvited() {
         return new Membership(id, userId, tenantId, role, MembershipStatus.INVITED,
                 true, personnelCreationAllowed, assignmentCandidatesViewAllowed,
-                taskCreationAllowed, createdAt);
+                taskCreationAllowed, siteLogManagementAllowed, createdAt);
     }
 
     /** Activa la membresía cuando la persona acepta la invitación. */
     public Membership activate() {
         return new Membership(id, userId, tenantId, role, MembershipStatus.ACTIVE,
                 true, personnelCreationAllowed, assignmentCandidatesViewAllowed,
-                taskCreationAllowed, createdAt);
+                taskCreationAllowed, siteLogManagementAllowed, createdAt);
     }
 
     /**
@@ -165,6 +194,14 @@ public class Membership {
         return role.canCreateTasks() || taskCreationAllowed;
     }
 
+    /**
+     * Permiso efectivo para editar o eliminar entradas de la bitácora: un ADMIN
+     * siempre puede; un WORKER o MEMBER solo si un ADMIN se lo concedió.
+     */
+    public boolean canManageSiteLog() {
+        return role.canManageSiteLog() || siteLogManagementAllowed;
+    }
+
     public UUID getId() { return id; }
     public UUID getUserId() { return userId; }
     public UUID getTenantId() { return tenantId; }
@@ -174,5 +211,6 @@ public class Membership {
     public boolean isPersonnelCreationAllowed() { return personnelCreationAllowed; }
     public boolean isAssignmentCandidatesViewAllowed() { return assignmentCandidatesViewAllowed; }
     public boolean isTaskCreationAllowed() { return taskCreationAllowed; }
+    public boolean isSiteLogManagementAllowed() { return siteLogManagementAllowed; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
