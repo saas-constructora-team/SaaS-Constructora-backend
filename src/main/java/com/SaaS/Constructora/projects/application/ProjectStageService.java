@@ -6,6 +6,7 @@ import com.SaaS.Constructora.projects.interfaces.ProjectStageResponse;
 import com.SaaS.Constructora.projects.interfaces.UpdateProjectStageRequest;
 
 import com.SaaS.Constructora.identity.domain.Role;
+import com.SaaS.Constructora.shared.events.ProjectChanged;
 import com.SaaS.Constructora.shared.events.ProjectStageClosed;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -53,6 +54,8 @@ public class ProjectStageService {
         int nextOrder = repository.findMaxStageOrder(tenantId, projectId) + 1;
         ProjectStage saved = repository.save(
                 new ProjectStage(tenantId, projectId, request.name(), nextOrder));
+        events.publishEvent(ProjectChanged.of(tenantId, projectId,
+                ProjectChanged.STAGE, saved.getId(), userId));
         return ProjectStageResponse.from(saved);
     }
 
@@ -67,10 +70,12 @@ public class ProjectStageService {
         } catch (IllegalStateException exception) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage());
         }
+        events.publishEvent(ProjectChanged.of(tenantId, projectId,
+                ProjectChanged.STAGE, stageId, userId));
         return ProjectStageResponse.from(stage);
     }
 
-    /** Cierra la etapa y publica el evento que consume auditoría. */
+    /** Cierra la etapa y publica los eventos que consumen auditoría y realtime. */
     @Transactional
     public ProjectStageResponse close(UUID tenantId, UUID projectId, UUID stageId,
                                       UUID userId, Role role) {
@@ -84,6 +89,8 @@ public class ProjectStageService {
         events.publishEvent(new ProjectStageClosed(
                 UUID.randomUUID(), tenantId, projectId, stage.getId(), userId,
                 stage.getName(), stage.getStageOrder(), stage.getClosedAt()));
+        events.publishEvent(ProjectChanged.of(tenantId, projectId,
+                ProjectChanged.STAGE, stage.getId(), userId));
         return ProjectStageResponse.from(stage);
     }
 
@@ -91,7 +98,10 @@ public class ProjectStageService {
     public void delete(UUID tenantId, UUID projectId, UUID stageId,
                        UUID userId, Role role) {
         projectService.ensureUserCanAccessProject(projectId, tenantId, userId, role);
-        repository.delete(requireStage(tenantId, projectId, stageId));
+        ProjectStage stage = requireStage(tenantId, projectId, stageId);
+        repository.delete(stage);
+        events.publishEvent(ProjectChanged.of(tenantId, projectId,
+                ProjectChanged.STAGE, stage.getId(), userId));
     }
 
     private ProjectStage requireStage(UUID tenantId, UUID projectId, UUID stageId) {

@@ -8,6 +8,7 @@ import com.SaaS.Constructora.sitelog.application.ports.SiteLogRepository;
 import com.SaaS.Constructora.sitelog.domain.SiteLogEntry;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -29,7 +30,8 @@ class SiteLogServiceTest {
     private final SiteLogRepository repository = mock(SiteLogRepository.class);
     private final ProjectTenantPort projects = mock(ProjectTenantPort.class);
     private final DocumentTenantPort documents = mock(DocumentTenantPort.class);
-    private final SiteLogService service = new SiteLogService(repository, projects, documents);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final SiteLogService service = new SiteLogService(repository, projects, documents, events);
 
     @Test
     void asociaUnDocumentoDelTenantALaEtapaValidada() {

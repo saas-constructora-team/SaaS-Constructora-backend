@@ -15,6 +15,7 @@ import com.SaaS.Constructora.sitelog.interfaces.SiteLogRecordRequest;
 import com.SaaS.Constructora.sitelog.interfaces.SiteLogRecordResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -39,6 +40,7 @@ class SiteLogRecordServiceTest {
     private final UserQueryPort users = mock(UserQueryPort.class);
     private final SiteLogManagementPermissionService permissions =
             mock(SiteLogManagementPermissionService.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
 
     private SiteLogRecordService service;
 
@@ -50,7 +52,7 @@ class SiteLogRecordServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SiteLogRecordService(repository, projects, users, permissions);
+        service = new SiteLogRecordService(repository, projects, users, permissions, events);
         when(projects.isUserAssignedToProject(projectId, tenantId, authorId)).thenReturn(true);
         when(projects.getProjectName(projectId, tenantId)).thenReturn("Obra Torres");
         when(users.ensureBelongsToTenant(authorId, tenantId))

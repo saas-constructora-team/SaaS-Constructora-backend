@@ -4,12 +4,14 @@ import com.SaaS.Constructora.identity.application.SiteLogManagementPermissionSer
 import com.SaaS.Constructora.identity.application.UserSummary;
 import com.SaaS.Constructora.identity.application.ports.UserQueryPort;
 import com.SaaS.Constructora.projects.application.ports.ProjectTenantPort;
+import com.SaaS.Constructora.shared.events.ProjectChanged;
 import com.SaaS.Constructora.shared.security.AuthenticatedUser;
 import com.SaaS.Constructora.sitelog.application.ports.SiteLogRecordRepository;
 import com.SaaS.Constructora.sitelog.domain.SiteLogRecord;
 import com.SaaS.Constructora.sitelog.domain.SiteLogType;
 import com.SaaS.Constructora.sitelog.interfaces.SiteLogRecordRequest;
 import com.SaaS.Constructora.sitelog.interfaces.SiteLogRecordResponse;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,14 +29,17 @@ public class SiteLogRecordService {
     private final ProjectTenantPort projects;
     private final UserQueryPort users;
     private final SiteLogManagementPermissionService siteLogPermissions;
+    private final ApplicationEventPublisher events;
 
     public SiteLogRecordService(SiteLogRecordRepository repository, ProjectTenantPort projects,
                                 UserQueryPort users,
-                                SiteLogManagementPermissionService siteLogPermissions) {
+                                SiteLogManagementPermissionService siteLogPermissions,
+                                ApplicationEventPublisher events) {
         this.repository = repository;
         this.projects = projects;
         this.users = users;
         this.siteLogPermissions = siteLogPermissions;
+        this.events = events;
     }
 
     @Transactional
@@ -51,7 +56,9 @@ public class SiteLogRecordService {
                 trimToNull(request.why()), author.id(),
                 assignee == null ? null : assignee.id(), now, now);
 
-        return toResponse(repository.save(record), author, assignee);
+        SiteLogRecord saved = repository.save(record);
+        notifyChange(tenantId, projectId, user.userId(), saved.id());
+        return toResponse(saved, author, assignee);
     }
 
     @Transactional(readOnly = true)
@@ -81,7 +88,9 @@ public class SiteLogRecordService {
                 current.createdAt(), LocalDateTime.now());
 
         UserSummary author = users.ensureBelongsToTenant(current.authorId(), tenantId);
-        return toResponse(repository.save(updated), author, assignee);
+        SiteLogRecord saved = repository.save(updated);
+        notifyChange(tenantId, projectId, user.userId(), saved.id());
+        return toResponse(saved, author, assignee);
     }
 
     /** El botón "actualizar" del frontend: cambia la modificación, no la creación. */
@@ -91,7 +100,9 @@ public class SiteLogRecordService {
         requireProjectAccess(tenantId, projectId, user);
         SiteLogRecord current = requireRecord(tenantId, projectId, entryId);
         requireEditPermission(tenantId, current, user);
-        return toResponse(repository.save(current.touched(LocalDateTime.now())));
+        SiteLogRecord saved = repository.save(current.touched(LocalDateTime.now()));
+        notifyChange(tenantId, projectId, user.userId(), saved.id());
+        return toResponse(saved);
     }
 
     @Transactional
@@ -100,6 +111,12 @@ public class SiteLogRecordService {
         SiteLogRecord current = requireRecord(tenantId, projectId, entryId);
         requireEditPermission(tenantId, current, user);
         repository.deleteById(current.id(), tenantId);
+        notifyChange(tenantId, projectId, user.userId(), current.id());
+    }
+
+    private void notifyChange(UUID tenantId, UUID projectId, UUID userId, UUID entryId) {
+        events.publishEvent(ProjectChanged.of(tenantId, projectId,
+                ProjectChanged.SITE_LOG, entryId, userId));
     }
 
     private void requireProjectAccess(UUID tenantId, UUID projectId, AuthenticatedUser user) {
