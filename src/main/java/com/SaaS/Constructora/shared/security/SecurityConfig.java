@@ -47,13 +47,15 @@ public class SecurityConfig {
                     response.setStatus(HttpStatus.UNAUTHORIZED.value());
                     response.setContentType("application/json");
                     objectMapper.writeValue(response.getOutputStream(), ApiError.of(
-                            HttpStatus.UNAUTHORIZED.value(), "Unauthorized", "Se requiere autenticación"));
+                            HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
+                            "Se requiere autenticación", "UNAUTHORIZED"));
                 })
                 .accessDeniedHandler((request, response, exception) -> {
                     response.setStatus(HttpStatus.FORBIDDEN.value());
                     response.setContentType("application/json");
                     objectMapper.writeValue(response.getOutputStream(), ApiError.of(
-                            HttpStatus.FORBIDDEN.value(), "Forbidden", "No tiene permiso para esta operación"));
+                            HttpStatus.FORBIDDEN.value(), "Forbidden",
+                            "No tiene permiso para esta operación", "FORBIDDEN"));
                 }))
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
             // Debe ir después del resource server: allí ya está poblado el SecurityContext

@@ -13,6 +13,8 @@ interface ActiveUserProjection {
 
     String getFullName();
 
+    String getUsername();
+
     Role getRole();
 
     boolean isActive();

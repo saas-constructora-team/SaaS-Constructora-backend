@@ -161,7 +161,7 @@ public class PermissionManagementUseCase {
     }
 
     private static UserSummary summaryOf(UserSummary target, Membership membership) {
-        return new UserSummary(target.id(), target.email(), target.fullName(),
+        return new UserSummary(target.id(), target.email(), target.fullName(), target.username(),
                 membership.getRole(), target.active(), membership.canCreatePersonnel(),
                 membership.canViewAssignmentCandidates(), membership.canCreateTasks(),
                 membership.canManageSiteLog());

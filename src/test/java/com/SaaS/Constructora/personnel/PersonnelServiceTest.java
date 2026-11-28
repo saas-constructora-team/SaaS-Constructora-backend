@@ -68,6 +68,7 @@ private static User anyUser() {
     private static CreateWorkerRequest request(UUID projectId) {
         return new CreateWorkerRequest(
                 "Ana Gómez Pérez",
+                "ana.gomez",
                 DocumentType.NATIONAL_ID,
                 "1020304050",
                 "+57 300 123 4567",

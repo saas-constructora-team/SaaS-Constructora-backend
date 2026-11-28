@@ -271,6 +271,62 @@ class ProjectStageIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void adminCambiaElColorYSeConservaEnStagesYTablero() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto color etapa " + UUID.randomUUID());
+        StageRef stage = firstStage(demo.token(), projectId);
+
+        mockMvc.perform(put("/api/projects/{projectId}/stages/{stageId}", projectId, stage.id())
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"" + INITIAL_STAGES.get(0)
+                                + "\",\"color\":\"TOSCA\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.color").value("TOSCA"));
+
+        mockMvc.perform(get("/api/projects/{projectId}/stages", projectId)
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].color").value("TOSCA"));
+
+        mockMvc.perform(get("/api/tasks/board")
+                        .param("projectId", projectId.toString())
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stages[0].color").value("TOSCA"));
+    }
+
+    @Test
+    void bulkCambiaElColorDeEtapasDeVariosProyectos() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID firstProject = createProject(demo.token(), "Proyecto color A " + UUID.randomUUID());
+        UUID secondProject = createProject(demo.token(), "Proyecto color B " + UUID.randomUUID());
+        StageRef first = firstStage(demo.token(), firstProject);
+        StageRef second = firstStage(demo.token(), secondProject);
+
+        String body = "{\"stages\":["
+                + "{\"projectId\":\"" + firstProject + "\",\"stageId\":\"" + first.id()
+                + "\",\"color\":\"LAVENDER\"},"
+                + "{\"projectId\":\"" + secondProject + "\",\"stageId\":\"" + second.id()
+                + "\",\"color\":\"LAVENDER\"}]}";
+
+        mockMvc.perform(put("/api/projects/stages/color")
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/projects/{projectId}/stages", firstProject)
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].color").value("LAVENDER"));
+        mockMvc.perform(get("/api/projects/{projectId}/stages", secondProject)
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].color").value("LAVENDER"));
+    }
+
     private Session login(String email, String password) throws Exception {
         String body = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

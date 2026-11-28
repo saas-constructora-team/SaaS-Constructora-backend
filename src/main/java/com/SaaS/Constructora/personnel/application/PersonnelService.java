@@ -96,11 +96,17 @@ public class PersonnelService {
                     "Ya existe un usuario con ese correo electrónico en el sistema");
         }
 
+        String username = User.normalizeUsername(request.username());
+        if (username != null && userRepository.existsByUsernameIgnoreCase(username)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El username ya está en uso");
+        }
+
         // Crear el usuario de identidad
         User user = new User(
                 UUID.randomUUID(),
                 request.email(),
                 requireText(request.fullName()),
+                username,
                 passwordHash,
                 true, // active
                 LocalDateTime.now()
@@ -135,7 +141,9 @@ public class PersonnelService {
                 positionName,
                 request.projectId());
 
-        return WorkerResponse.from(repository.save(worker));
+        Worker saved = repository.save(worker);
+        saved.setUsername(user.getUsername());
+        return WorkerResponse.from(saved);
     }
 
     /**
@@ -170,10 +178,13 @@ public class PersonnelService {
     @Transactional(readOnly = true)
     public List<WorkerResponse> list(UUID tenantId, UUID actorId) {
         permissionService.requireCanManagePersonnel(tenantId, actorId);
-        return repository.findByTenantIdOrderByCreatedAtDesc(tenantId)
-                .stream()
-                .map(WorkerResponse::from)
-                .toList();
+        List<Worker> workers = repository.findByTenantIdOrderByCreatedAtDesc(tenantId);
+        for (Worker worker : workers) {
+            if (worker.getUserId() != null) {
+                userRepository.findById(worker.getUserId()).ifPresent(u -> worker.setUsername(u.getUsername()));
+            }
+        }
+        return workers.stream().map(WorkerResponse::from).toList();
     }
 
     private static String requireText(String value) {

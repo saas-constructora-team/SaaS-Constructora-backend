@@ -17,6 +17,7 @@ public record InvitationIssued(
         UUID userId,
         String email,
         String fullName,
+        String username,
         String companyName,
         MembershipStatus status,
         LocalDateTime expiresAt,

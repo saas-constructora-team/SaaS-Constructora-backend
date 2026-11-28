@@ -10,6 +10,8 @@ import com.SaaS.Constructora.projects.domain.TipoDocumentoContable;
 import com.SaaS.Constructora.projects.domain.UnidadMedida;
 import com.SaaS.Constructora.projects.infrastructure.ProjectArea;
 import com.SaaS.Constructora.projects.infrastructure.ProjectAreaRepository;
+import com.SaaS.Constructora.projects.infrastructure.ProjectStage;
+import com.SaaS.Constructora.projects.infrastructure.ProjectStageRepository;
 import com.SaaS.Constructora.projects.application.ports.ProjectAssignmentRepository;
 import com.SaaS.Constructora.projects.domain.ProjectAssignment;
 import com.SaaS.Constructora.projects.infrastructure.Task;
@@ -19,12 +21,14 @@ import com.SaaS.Constructora.projects.infrastructure.TaskStatus;
 import com.SaaS.Constructora.projects.infrastructure.TaskStatusRepository;
 import com.SaaS.Constructora.projects.interfaces.AreaDetailsRequest;
 import com.SaaS.Constructora.projects.interfaces.CreateTaskRequest;
+import com.SaaS.Constructora.projects.interfaces.TaskBoardResponse;
 import com.SaaS.Constructora.projects.interfaces.TaskResponse;
 
 import com.SaaS.Constructora.identity.application.TaskCreationPermissionService;
 import com.SaaS.Constructora.identity.domain.Role;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -36,10 +40,12 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -57,8 +63,9 @@ class TaskServiceTest {
     private final ProjectAreaRepository areaRepository = mock(ProjectAreaRepository.class);
     private final ProjectAssignmentRepository assignmentRepository =
             mock(ProjectAssignmentRepository.class);
+    private final ProjectStageRepository stageRepository = mock(ProjectStageRepository.class);
     private final TaskService service = new TaskService(repository, projectService, permissionService,
-            statusRepository, areaRepository, assignmentRepository);
+            statusRepository, areaRepository, assignmentRepository, stageRepository);
 
     private final UUID tenantId = UUID.randomUUID();
     private final UUID projectId = UUID.randomUUID();
@@ -376,5 +383,239 @@ class TaskServiceTest {
 
         assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
         verifyNoInteractions(repository, statusRepository, areaRepository, assignmentRepository);
+    }
+
+    @Test
+    void creaLaTareaVinculadaAUnaEtapa() {
+        UUID stageId = UUID.randomUUID();
+        when(statusRepository.findByTenantIdAndProjectIdAndDefaultStatusTrue(tenantId, projectId))
+                .thenReturn(Optional.of(status()));
+        when(repository.save(any(Task.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        TaskResponse response = service.create(tenantId, projectId, userId, Role.ADMIN,
+                new CreateTaskRequest("Tarea en etapa", null, null, null, null, null,
+                        null, null, stageId));
+
+        assertEquals(stageId, response.stageId());
+        ArgumentCaptor<Task> captor = ArgumentCaptor.forClass(Task.class);
+        verify(repository).save(captor.capture());
+        assertEquals(stageId, captor.getValue().getStageId());
+        verify(projectService).ensureStageBelongsToProjectAndTenant(stageId, projectId, tenantId);
+        verify(projectService).ensureStageAllowsEntries(stageId);
+    }
+
+    @Test
+    void noCreaSiLaEtapaNoPerteneceAlProyecto() {
+        UUID stageId = UUID.randomUUID();
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Etapa no encontrada"))
+                .when(projectService).ensureStageBelongsToProjectAndTenant(
+                        stageId, projectId, tenantId);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.create(tenantId, projectId, userId, Role.ADMIN,
+                        new CreateTaskRequest("Tarea", null, null, null, null, null,
+                                null, null, stageId)));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verifyNoInteractions(repository, statusRepository, areaRepository, assignmentRepository);
+    }
+
+    @Test
+    void noCreaSiLaEtapaEstaCerrada() {
+        UUID stageId = UUID.randomUUID();
+        doThrow(new ResponseStatusException(HttpStatus.CONFLICT,
+                "La etapa está cerrada, no permite registrar novedades"))
+                .when(projectService).ensureStageAllowsEntries(stageId);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.create(tenantId, projectId, userId, Role.ADMIN,
+                        new CreateTaskRequest("Tarea", null, null, null, null, null,
+                                null, null, stageId)));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verifyNoInteractions(repository, statusRepository, areaRepository, assignmentRepository);
+    }
+
+    private Task tareaConEtapa(UUID stageId, TaskStatus status) {
+        return new Task(tenantId, projectId, userId, "Tarea en etapa", null, null,
+                new TaskAreaDetails(), status.getId(), null, null, null, stageId);
+    }
+
+    @Test
+    void mueveLaTareaAUnaEtapaDelMismoProyecto() {
+        UUID taskId = UUID.randomUUID();
+        UUID targetStageId = UUID.randomUUID();
+        TaskStatus status = status();
+        when(repository.findByIdAndTenantId(taskId, tenantId))
+                .thenReturn(Optional.of(tareaConEtapa(UUID.randomUUID(), status)));
+        when(repository.save(any(Task.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(statusRepository.findByIdAndTenantIdAndProjectId(
+                status.getId(), tenantId, projectId)).thenReturn(Optional.of(status));
+
+        TaskResponse response = service.moveToStage(
+                tenantId, taskId, userId, Role.WORKER, targetStageId);
+
+        assertEquals(targetStageId, response.stageId());
+        ArgumentCaptor<Task> captor = ArgumentCaptor.forClass(Task.class);
+        verify(repository).save(captor.capture());
+        assertEquals(targetStageId, captor.getValue().getStageId());
+        verify(permissionService).requireCanCreateTasks(tenantId, userId);
+        verify(projectService).ensureUserCanAccessProject(
+                projectId, tenantId, userId, Role.WORKER);
+        verify(projectService).ensureStageBelongsToProjectAndTenant(
+                targetStageId, projectId, tenantId);
+        verify(projectService).ensureStageAllowsEntries(targetStageId);
+    }
+
+    @Test
+    void mueveLaTareaASinEtapaSinValidarEtapaDestino() {
+        UUID taskId = UUID.randomUUID();
+        TaskStatus status = status();
+        when(repository.findByIdAndTenantId(taskId, tenantId))
+                .thenReturn(Optional.of(tareaConEtapa(UUID.randomUUID(), status)));
+        when(repository.save(any(Task.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(statusRepository.findByIdAndTenantIdAndProjectId(
+                status.getId(), tenantId, projectId)).thenReturn(Optional.of(status));
+
+        TaskResponse response = service.moveToStage(tenantId, taskId, userId, Role.ADMIN, null);
+
+        assertNull(response.stageId());
+        verify(projectService, never()).ensureStageBelongsToProjectAndTenant(
+                any(), any(), any());
+        verify(projectService, never()).ensureStageAllowsEntries(any());
+    }
+
+    @Test
+    void noMueveUnaTareaDeOtroTenant() {
+        UUID taskId = UUID.randomUUID();
+        when(repository.findByIdAndTenantId(taskId, tenantId)).thenReturn(Optional.empty());
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.moveToStage(tenantId, taskId, userId, Role.ADMIN, UUID.randomUUID()));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verifyNoInteractions(projectService, statusRepository, areaRepository, assignmentRepository);
+        verify(repository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void noMueveLaTareaAUnaEtapaDeOtroProyecto() {
+        UUID taskId = UUID.randomUUID();
+        UUID foreignStageId = UUID.randomUUID();
+        when(repository.findByIdAndTenantId(taskId, tenantId))
+                .thenReturn(Optional.of(tareaConEtapa(null, status())));
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Etapa no encontrada"))
+                .when(projectService).ensureStageBelongsToProjectAndTenant(
+                        foreignStageId, projectId, tenantId);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.moveToStage(tenantId, taskId, userId, Role.ADMIN, foreignStageId));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verify(repository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void noMueveLaTareaAUnaEtapaCerrada() {
+        UUID taskId = UUID.randomUUID();
+        UUID stageId = UUID.randomUUID();
+        when(repository.findByIdAndTenantId(taskId, tenantId))
+                .thenReturn(Optional.of(tareaConEtapa(null, status())));
+        doThrow(new ResponseStatusException(HttpStatus.CONFLICT, "La etapa está cerrada"))
+                .when(projectService).ensureStageAllowsEntries(stageId);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.moveToStage(tenantId, taskId, userId, Role.ADMIN, stageId));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verify(repository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void tableroDevuelveEtapasYTareasDeLosProyectosVisibles() {
+        UUID stageId = UUID.randomUUID();
+        ProjectStage stage = new ProjectStage(tenantId, projectId, "Cimentación", 1);
+        TaskStatus status = status();
+        Task task = new Task(tenantId, projectId, userId, "Tarea en etapa", null,
+                null, null, status.getId(), null, null, null, stageId);
+
+        when(projectService.listVisibleProjectIds(tenantId, userId, Role.ADMIN))
+                .thenReturn(List.of(projectId));
+        when(repository.findByTenantIdAndProjectIdIn(
+                eq(tenantId), eq(List.of(projectId)), any(Pageable.class)))
+                .thenReturn(List.of(task));
+        when(stageRepository.findByTenantIdAndProjectIdInOrderByStageOrderAsc(tenantId, List.of(projectId)))
+                .thenReturn(List.of(stage));
+        when(statusRepository.findByTenantIdAndProjectIdInOrderByStatusOrderAsc(tenantId, List.of(projectId)))
+                .thenReturn(List.of(status));
+        when(areaRepository.findByTenantIdAndProjectIdInOrderByNameAsc(tenantId, List.of(projectId)))
+                .thenReturn(List.of());
+        when(assignmentRepository.findActiveByTenantIdAndProjectIdIn(tenantId, List.of(projectId)))
+                .thenReturn(List.of());
+
+        TaskBoardResponse board = service.getBoard(tenantId, userId, Role.ADMIN, null, 500);
+
+        assertEquals(1, board.stages().size());
+        assertEquals("Cimentación", board.stages().getFirst().name());
+        assertEquals(1, board.tasks().size());
+        assertEquals(stageId, board.tasks().getFirst().stageId());
+        assertEquals("Pendiente", board.tasks().getFirst().status().name());
+        assertFalse(board.truncated());
+        verify(projectService).listVisibleProjectIds(tenantId, userId, Role.ADMIN);
+    }
+
+    @Test
+    void tableroSinProyectosVisiblesDevuelveListasVacias() {
+        when(projectService.listVisibleProjectIds(tenantId, userId, Role.WORKER))
+                .thenReturn(List.of());
+
+        TaskBoardResponse board = service.getBoard(tenantId, userId, Role.WORKER, null, 500);
+
+        assertEquals(List.of(), board.stages());
+        assertEquals(List.of(), board.tasks());
+        assertFalse(board.truncated());
+        verifyNoInteractions(repository, statusRepository, areaRepository,
+                assignmentRepository, stageRepository);
+    }
+
+    @Test
+    void tableroConProyectoValidaAccesoYRecortaSegunElLimite() {
+        UUID otherProjectId = UUID.randomUUID();
+        TaskStatus status = status();
+        Task first = new Task(tenantId, projectId, userId, "Reciente", null,
+                null, null, status.getId(), null, null, null, null);
+        Task second = new Task(tenantId, projectId, userId, "Anterior", null,
+                null, null, status.getId(), null, null, null, null);
+
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado"))
+                .when(projectService).ensureUserCanAccessProject(
+                        otherProjectId, tenantId, userId, Role.WORKER);
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.getBoard(tenantId, userId, Role.WORKER, otherProjectId, 500));
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verifyNoInteractions(repository, statusRepository, areaRepository,
+                assignmentRepository, stageRepository);
+
+        when(repository.findByTenantIdAndProjectIdIn(
+                eq(tenantId), eq(List.of(projectId)), any(Pageable.class)))
+                .thenReturn(List.of(first, second));
+        when(statusRepository.findByTenantIdAndProjectIdInOrderByStatusOrderAsc(tenantId, List.of(projectId)))
+                .thenReturn(List.of(status));
+        when(areaRepository.findByTenantIdAndProjectIdInOrderByNameAsc(tenantId, List.of(projectId)))
+                .thenReturn(List.of());
+        when(assignmentRepository.findActiveByTenantIdAndProjectIdIn(tenantId, List.of(projectId)))
+                .thenReturn(List.of());
+        when(stageRepository.findByTenantIdAndProjectIdInOrderByStageOrderAsc(tenantId, List.of(projectId)))
+                .thenReturn(List.of());
+
+        TaskBoardResponse board = service.getBoard(tenantId, userId, Role.WORKER, projectId, 1);
+
+        assertEquals(1, board.tasks().size());
+        assertEquals("Reciente", board.tasks().getFirst().title());
+        assertTrue(board.truncated());
+        verify(projectService).ensureUserCanAccessProject(projectId, tenantId, userId, Role.WORKER);
     }
 }

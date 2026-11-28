@@ -22,6 +22,10 @@ public interface UserRepository {
 
     boolean existsByEmail(String email);
 
+    boolean existsByUsernameIgnoreCase(String username);
+
+    boolean existsByUsernameIgnoreCaseAndIdNot(String username, UUID userId);
+
     User save(User user);
 
     /** Actualiza únicamente el hash de contraseña del usuario indicado (HU-13). */

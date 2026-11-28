@@ -8,6 +8,7 @@ public record UserResponse(
         UUID id,
         String email,
         String fullName,
+        String username,
         String role,
         boolean active,
         boolean canCreatePersonnel,
@@ -16,7 +17,7 @@ public record UserResponse(
         boolean canManageSiteLog
 ) {
     public static UserResponse from(UserSummary user) {
-        return new UserResponse(user.id(), user.email(), user.fullName(),
+        return new UserResponse(user.id(), user.email(), user.fullName(), user.username(),
                 user.role().name(), user.active(), user.canCreatePersonnel(),
                 user.canViewAssignmentCandidates(), user.canCreateTasks(),
                 user.canManageSiteLog());

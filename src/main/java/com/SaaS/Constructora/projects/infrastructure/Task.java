@@ -10,9 +10,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Tarea vinculada a un proyecto. El tenant se referencia por ID y toda consulta
- * debe filtrarlo explícitamente. Las referencias a estado, área y usuarios se
- * guardan por ID, sin asociaciones JPA que acoplen otras entidades.
+ * Tarea vinculada a un proyecto y, opcionalmente, a una etapa del mismo.
+ * El tenant se referencia por ID y toda consulta debe filtrarlo explícitamente.
+ * Las referencias a estado, área, etapa y usuarios se guardan por ID, sin
+ * asociaciones JPA que acoplen otras entidades.
  */
 @FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = UUID.class))
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
@@ -47,6 +48,9 @@ public class Task {
     @Column(name = "area_id")
     private UUID areaId;
 
+    @Column(name = "stage_id")
+    private UUID stageId;
+
     @Column(name = "assignee_assignment_id")
     private UUID assigneeAssignmentId;
 
@@ -72,6 +76,14 @@ public class Task {
                 LocalDate fechaFinPrevista, TaskAreaDetails detallesArea,
                 UUID statusId, UUID areaId, UUID assigneeAssignmentId,
                 UUID validatorAssignmentId) {
+        this(tenantId, projectId, createdBy, title, description, fechaFinPrevista, detallesArea,
+                statusId, areaId, assigneeAssignmentId, validatorAssignmentId, null);
+    }
+
+    public Task(UUID tenantId, UUID projectId, UUID createdBy, String title, String description,
+                LocalDate fechaFinPrevista, TaskAreaDetails detallesArea,
+                UUID statusId, UUID areaId, UUID assigneeAssignmentId,
+                UUID validatorAssignmentId, UUID stageId) {
         this.id = UUID.randomUUID();
         this.tenantId = tenantId;
         this.projectId = projectId;
@@ -82,6 +94,7 @@ public class Task {
         this.detallesArea = detallesArea == null ? new TaskAreaDetails() : detallesArea;
         this.statusId = statusId;
         this.areaId = areaId;
+        this.stageId = stageId;
         this.assigneeAssignmentId = assigneeAssignmentId;
         this.validatorAssignmentId = validatorAssignmentId;
     }
@@ -100,8 +113,29 @@ public class Task {
     public TaskAreaDetails getDetallesArea() { return detallesArea; }
     public UUID getStatusId() { return statusId; }
     public UUID getAreaId() { return areaId; }
+    public UUID getStageId() { return stageId; }
     public UUID getAssigneeAssignmentId() { return assigneeAssignmentId; }
     public UUID getValidatorAssignmentId() { return validatorAssignmentId; }
     public UUID getCreatedBy() { return createdBy; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+
+    /** Actualiza los campos editables de la tarea; las reglas se validan en application. */
+    public void update(String title, String description, LocalDate fechaFinPrevista,
+                       TaskAreaDetails detallesArea, UUID statusId, UUID areaId,
+                       UUID assigneeAssignmentId, UUID validatorAssignmentId, UUID stageId) {
+        this.title = title;
+        this.description = description;
+        this.fechaFinPrevista = fechaFinPrevista;
+        this.detallesArea = detallesArea == null ? new TaskAreaDetails() : detallesArea;
+        this.statusId = statusId;
+        this.areaId = areaId;
+        this.assigneeAssignmentId = assigneeAssignmentId;
+        this.validatorAssignmentId = validatorAssignmentId;
+        this.stageId = stageId;
+    }
+
+    /** Cambia la etapa de la tarea; la pertenencia y el estado de la etapa se validan en application. */
+    public void moveToStage(UUID stageId) {
+        this.stageId = stageId;
+    }
 }

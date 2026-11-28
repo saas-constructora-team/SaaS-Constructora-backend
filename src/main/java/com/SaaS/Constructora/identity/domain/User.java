@@ -13,18 +13,26 @@ public class User {
     private final UUID id;
     private final String email;
     private final String fullName;
+    private final String username;
     private final String passwordHash;
     private final boolean active;
     private final LocalDateTime createdAt;
 
-    public User(UUID id, String email, String fullName,
+    public User(UUID id, String email, String fullName, String username,
                 String passwordHash, boolean active, LocalDateTime createdAt) {
         this.id = id;
         this.email = email;
         this.fullName = fullName;
+        this.username = normalizeUsername(username);
         this.passwordHash = passwordHash;
         this.active = active;
         this.createdAt = createdAt;
+    }
+
+    /** Compatibilidad: usuarios existentes sin username. */
+    public User(UUID id, String email, String fullName,
+                String passwordHash, boolean active, LocalDateTime createdAt) {
+        this(id, email, fullName, null, passwordHash, active, createdAt);
     }
 
     // Regla de negocio: un usuario desactivado no puede autenticarse.
@@ -32,9 +40,16 @@ public class User {
         return active;
     }
 
+    public static String normalizeUsername(String username) {
+        if (username == null) return null;
+        String normalized = username.trim().toLowerCase();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
     public UUID getId() { return id; }
     public String getEmail() { return email; }
     public String getFullName() { return fullName; }
+    public String getUsername() { return username; }
     public String getPasswordHash() { return passwordHash; }
     public boolean isActive() { return active; }
     public LocalDateTime getCreatedAt() { return createdAt; }

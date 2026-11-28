@@ -3,6 +3,7 @@ package com.SaaS.Constructora.projects.application.ports;
 import com.SaaS.Constructora.projects.domain.ProjectAssignment;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,10 +16,16 @@ public interface ProjectAssignmentRepository {
 
     List<ProjectAssignment> findActiveByTenantId(UUID tenantId);
 
+    List<ProjectAssignment> findActiveByTenantIdAndProjectIdIn(
+            UUID tenantId, Collection<UUID> projectIds);
+
     List<ProjectAssignment> findActiveByTenantIdAndUserId(UUID tenantId, UUID userId);
 
     Optional<ProjectAssignment> findActiveByTenantIdAndProjectIdAndUserId(
             UUID tenantId, UUID projectId, UUID userId);
+
+    Optional<ProjectAssignment> findActiveByIdAndTenantIdAndProjectId(
+            UUID id, UUID tenantId, UUID projectId);
 
     boolean existsActiveByTenantIdAndProjectIdAndUserId(
             UUID tenantId, UUID projectId, UUID userId);

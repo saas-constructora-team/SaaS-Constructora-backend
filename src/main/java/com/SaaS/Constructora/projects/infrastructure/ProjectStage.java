@@ -1,5 +1,6 @@
 package com.SaaS.Constructora.projects.infrastructure;
 
+import com.SaaS.Constructora.projects.domain.StageColor;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
@@ -42,6 +43,10 @@ public class ProjectStage {
     @Column(name = "stage_order", nullable = false, updatable = false)
     private int stageOrder;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "color", nullable = false, length = 20)
+    private StageColor color = StageColor.SAGE;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -51,11 +56,17 @@ public class ProjectStage {
     protected ProjectStage() { } // requerido por JPA
 
     public ProjectStage(UUID tenantId, UUID projectId, String name, int stageOrder) {
+        this(tenantId, projectId, name, stageOrder, StageColor.SAGE);
+    }
+
+    public ProjectStage(UUID tenantId, UUID projectId, String name, int stageOrder,
+                        StageColor color) {
         this.id = UUID.randomUUID();
         this.tenantId = tenantId;
         this.projectId = projectId;
         this.name = name;
         this.stageOrder = stageOrder;
+        this.color = color == null ? StageColor.SAGE : color;
     }
 
     public static List<ProjectStage> initialStages(UUID tenantId, UUID projectId) {
@@ -74,6 +85,11 @@ public class ProjectStage {
     public void rename(String name) {
         requireOpen();
         this.name = name;
+    }
+
+    /** Cambia el color que representa a la etapa en el tablero. */
+    public void changeColor(StageColor color) {
+        this.color = color == null ? StageColor.SAGE : color;
     }
 
     /** Cierra la etapa. Una etapa cerrada es definitiva. */
@@ -95,6 +111,7 @@ public class ProjectStage {
     public UUID getProjectId() { return projectId; }
     public String getName() { return name; }
     public int getStageOrder() { return stageOrder; }
+    public StageColor getColor() { return color; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getClosedAt() { return closedAt; }
 }

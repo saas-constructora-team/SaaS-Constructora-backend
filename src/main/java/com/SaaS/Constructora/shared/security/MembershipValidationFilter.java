@@ -13,6 +13,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -85,6 +86,12 @@ public class MembershipValidationFilter extends OncePerRequestFilter {
         } catch (ResponseStatusException ex) {
             writeError(response, ex);
             return;
+        } catch (DataAccessException ex) {
+            // Este filtro está fuera del DispatcherServlet: el @RestControllerAdvice
+            // no puede sanitizar aquí, así que se escribe la respuesta directamente.
+            log.error("No se pudo validar la membresía del usuario", ex);
+            writeError(response, ApiError.serviceUnavailable());
+            return;
         }
 
         try {
@@ -103,10 +110,13 @@ public class MembershipValidationFilter extends OncePerRequestFilter {
             throws IOException {
         int status = exception.getStatusCode().value();
         HttpStatus httpStatus = HttpStatus.valueOf(status);
-        response.setStatus(status);
+        writeError(response, ApiError.of(status, httpStatus.getReasonPhrase(), exception.getReason()));
+    }
+
+    private void writeError(HttpServletResponse response, ApiError error) throws IOException {
+        response.setStatus(error.status());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getOutputStream(), ApiError.of(
-                status, httpStatus.getReasonPhrase(), exception.getReason()));
+        objectMapper.writeValue(response.getOutputStream(), error);
     }
 
     /** Extrae el contexto del JWT que el resource server dejó en el SecurityContext. */

@@ -1,9 +1,11 @@
 package com.SaaS.Constructora.projects.application;
+import com.SaaS.Constructora.projects.domain.StageColor;
 import com.SaaS.Constructora.projects.infrastructure.ProjectStage;
 import com.SaaS.Constructora.projects.infrastructure.ProjectStageRepository;
 import com.SaaS.Constructora.projects.interfaces.CreateProjectStageRequest;
 import com.SaaS.Constructora.projects.interfaces.ProjectStageResponse;
 import com.SaaS.Constructora.projects.interfaces.UpdateProjectStageRequest;
+import com.SaaS.Constructora.projects.interfaces.UpdateStageColorsRequest;
 
 import com.SaaS.Constructora.identity.domain.Role;
 import com.SaaS.Constructora.shared.events.ProjectChanged;
@@ -14,7 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -52,8 +58,9 @@ public class ProjectStageService {
         projectService.ensureUserCanAccessProject(projectId, tenantId, userId, role);
 
         int nextOrder = repository.findMaxStageOrder(tenantId, projectId) + 1;
+        StageColor color = request.color() == null ? StageColor.SAGE : request.color();
         ProjectStage saved = repository.save(
-                new ProjectStage(tenantId, projectId, request.name(), nextOrder));
+                new ProjectStage(tenantId, projectId, request.name(), nextOrder, color));
         events.publishEvent(ProjectChanged.of(tenantId, projectId,
                 ProjectChanged.STAGE, saved.getId(), userId));
         return ProjectStageResponse.from(saved);
@@ -66,13 +73,48 @@ public class ProjectStageService {
         projectService.ensureUserCanAccessProject(projectId, tenantId, userId, role);
         ProjectStage stage = requireStage(tenantId, projectId, stageId);
         try {
-            stage.rename(request.name());
+            if (!stage.getName().equals(request.name())) {
+                stage.rename(request.name());
+            }
         } catch (IllegalStateException exception) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage());
+        }
+        if (request.color() != null) {
+            stage.changeColor(request.color());
         }
         events.publishEvent(ProjectChanged.of(tenantId, projectId,
                 ProjectChanged.STAGE, stageId, userId));
         return ProjectStageResponse.from(stage);
+    }
+
+    /**
+     * Cambia el color de varias etapas en una sola transacción. El tablero
+     * agrupa etapas del mismo nombre de distintos proyectos: o se guardan todos
+     * los colores o no se guarda ninguno.
+     */
+    @Transactional
+    public void updateColors(UUID tenantId, UUID userId, Role role,
+                             UpdateStageColorsRequest request) {
+        Set<UUID> projectIds = new LinkedHashSet<>();
+        for (UpdateStageColorsRequest.StageColorUpdate update : request.stages()) {
+            projectIds.add(update.projectId());
+        }
+        for (UUID projectId : projectIds) {
+            projectService.ensureUserCanAccessProject(projectId, tenantId, userId, role);
+        }
+
+        Map<UUID, UUID> representativeStageByProject = new LinkedHashMap<>();
+        for (UpdateStageColorsRequest.StageColorUpdate update : request.stages()) {
+            ProjectStage stage = requireStage(tenantId, update.projectId(), update.stageId());
+            stage.changeColor(update.color());
+            representativeStageByProject.putIfAbsent(update.projectId(), stage.getId());
+        }
+
+        // Un aviso por proyecto alcanza a todas las sesiones conectadas a él.
+        for (Map.Entry<UUID, UUID> entry : representativeStageByProject.entrySet()) {
+            events.publishEvent(ProjectChanged.of(tenantId, entry.getKey(),
+                    ProjectChanged.STAGE, entry.getValue(), userId));
+        }
     }
 
     /** Cierra la etapa y publica los eventos que consumen auditoría y realtime. */

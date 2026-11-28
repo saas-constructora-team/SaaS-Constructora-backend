@@ -35,6 +35,22 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
             @Param("userId") UUID userId,
             @Param("admin") boolean admin);
 
+    /** Solo los IDs visibles, sin cargar entidades completas. */
+    @Query("""
+            select p.id from Project p
+            where p.tenantId = :tenantId
+              and (:admin = true or exists (
+                  select 1 from ProjectAssignment a
+                  where a.tenantId = :tenantId
+                    and a.userId = :userId
+                    and a.projectId = p.id
+                    and a.unassignedAt is null))
+            """)
+    List<UUID> findVisibleProjectIds(
+            @Param("tenantId") UUID tenantId,
+            @Param("userId") UUID userId,
+            @Param("admin") boolean admin);
+
     /** Búsqueda paginada y filtrada, siempre restringida al tenant y a la visibilidad del usuario. */
     @Query(value = """
             select p from Project p

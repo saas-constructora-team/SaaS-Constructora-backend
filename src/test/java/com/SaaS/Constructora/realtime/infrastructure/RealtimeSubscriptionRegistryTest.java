@@ -6,6 +6,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -47,5 +48,15 @@ class RealtimeSubscriptionRegistryTest {
                 ProjectChanged.SITE_LOG, UUID.randomUUID(), UUID.randomUUID()));
 
         verify(tenantWide).send(any(SseEmitter.SseEventBuilder.class));
+    }
+
+    @Test
+    void elStreamTieneTimeoutFinitoParaNoRetenerConexiones() {
+        SseEmitter emitter = registry.subscribe(tenantId, null);
+        try {
+            assertEquals(60_000L, emitter.getTimeout());
+        } finally {
+            emitter.complete();
+        }
     }
 }

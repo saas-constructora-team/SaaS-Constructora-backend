@@ -1,4 +1,5 @@
 package com.SaaS.Constructora.projects.interfaces;
+import com.SaaS.Constructora.projects.domain.StageColor;
 import com.SaaS.Constructora.projects.infrastructure.ProjectStage;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ public record ProjectStageResponse(
         UUID projectId,
         String name,
         int order,
+        StageColor color,
         LocalDateTime createdAt,
         LocalDateTime closedAt
 ) {
@@ -18,6 +20,7 @@ public record ProjectStageResponse(
                 stage.getProjectId(),
                 stage.getName(),
                 stage.getStageOrder(),
+                stage.getColor(),
                 stage.getCreatedAt(),
                 stage.getClosedAt());
     }

@@ -59,15 +59,19 @@ public class RegisterTenantUseCase {
         }
 
         LocalDateTime now = LocalDateTime.now();
+        UUID adminId = UUID.randomUUID();
+
+        // El usuario se persiste primero: tenants.owner_user_id tiene FK a users
+        // y Hibernate ejecuta los INSERT en el orden en que se registran.
+        User admin = userRepository.save(new User(
+                adminId, email, request.adminFullName().trim(), null,
+                passwordEncoder.encode(request.adminPassword()), true, now));
+
         Tenant tenant = tenantRepository.save(new Tenant(
                 UUID.randomUUID(), request.companyName().trim(), slug,
                 normalize(request.tradeName()), normalize(request.taxId()),
                 normalize(request.contactPhone()), normalize(request.address()),
-                normalize(request.companyEmail()), now));
-
-        User admin = userRepository.save(new User(
-                UUID.randomUUID(), email, request.adminFullName().trim(),
-                passwordEncoder.encode(request.adminPassword()), true, now));
+                normalize(request.companyEmail()), admin.getId(), now));
 
         // Crear membresía ADMIN para el usuario en el tenant
         Membership membership = new Membership(

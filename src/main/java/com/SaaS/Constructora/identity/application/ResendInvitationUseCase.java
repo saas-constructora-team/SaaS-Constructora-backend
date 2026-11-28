@@ -108,7 +108,7 @@ public class ResendInvitationUseCase {
         }
 
         return new InvitationIssued(membershipId, user.getId(), user.getEmail(),
-                user.getFullName(), tenant.getName(), MembershipStatus.INVITED, expiresAt,
+                user.getFullName(), user.getUsername(), tenant.getName(), MembershipStatus.INVITED, expiresAt,
                 emailResult.isDelivered(), emailResult.error());
     }
 

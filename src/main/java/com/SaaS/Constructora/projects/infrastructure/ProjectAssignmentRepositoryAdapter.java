@@ -5,6 +5,7 @@ import com.SaaS.Constructora.projects.domain.ProjectAssignment;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +33,12 @@ class ProjectAssignmentRepositoryAdapter implements ProjectAssignmentRepository 
     }
 
     @Override
+    public List<ProjectAssignment> findActiveByTenantIdAndProjectIdIn(
+            UUID tenantId, Collection<UUID> projectIds) {
+        return repository.findByTenantIdAndProjectIdInAndUnassignedAtIsNull(tenantId, projectIds);
+    }
+
+    @Override
     public List<ProjectAssignment> findActiveByTenantIdAndUserId(UUID tenantId, UUID userId) {
         return repository.findByTenantIdAndUserIdAndUnassignedAtIsNull(tenantId, userId);
     }
@@ -41,6 +48,13 @@ class ProjectAssignmentRepositoryAdapter implements ProjectAssignmentRepository 
             UUID tenantId, UUID projectId, UUID userId) {
         return repository.findByTenantIdAndProjectIdAndUserIdAndUnassignedAtIsNull(
                 tenantId, projectId, userId);
+    }
+
+    @Override
+    public Optional<ProjectAssignment> findActiveByIdAndTenantIdAndProjectId(
+            UUID id, UUID tenantId, UUID projectId) {
+        return repository.findByIdAndTenantIdAndProjectIdAndUnassignedAtIsNull(
+                id, tenantId, projectId);
     }
 
     @Override
