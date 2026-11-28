@@ -107,16 +107,19 @@ public class GoogleAuthUseCase {
         CompanyIdentity company = resolveCompany(request.companyName(), account.fullName());
 
         UUID userId = UUID.randomUUID();
-        Tenant tenant = tenantRepository.save(
-                new Tenant(UUID.randomUUID(), company.name(), company.slug(),
-                        null, null, null, null, null, userId, now));
 
+        // El usuario se persiste primero: tenants.owner_user_id tiene FK a users
+        // y Hibernate ejecuta los INSERT en el orden en que se registran.
         // Contraseña aleatoria: la cuenta se gestiona con Google y no tiene credenciales propias.
         // Con HU-13 puede fijar una contraseña propia si algún día quiere entrar sin Google.
         String randomPassword = randomUrlSafeToken();
         User user = userRepository.save(new User(
                 userId, account.email(), account.fullName(), null,
                 passwordEncoder.encode(randomPassword), true, now));
+
+        Tenant tenant = tenantRepository.save(
+                new Tenant(UUID.randomUUID(), company.name(), company.slug(),
+                        null, null, null, null, null, user.getId(), now));
 
         // Crear membresía ADMIN para el usuario en el tenant
         Membership membership = new Membership(
