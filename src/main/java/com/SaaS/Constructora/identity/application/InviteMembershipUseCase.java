@@ -85,9 +85,14 @@ public class InviteMembershipUseCase {
 
     @Transactional
     public InvitationIssued invite(UUID tenantId, UUID invitedByUserId, String rawEmail,
-                                   String fullName, Role requestedRole) {
+                                   String fullName, String username, Role requestedRole) {
         invitationGate.requireEnabled();
         String email = normalizeEmail(rawEmail);
+        String normalizedUsername = User.normalizeUsername(username);
+        if (normalizedUsername != null && !normalizedUsername.matches("^[a-z0-9._-]{3,30}$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El username debe tener entre 3 y 30 caracteres y solo puede contener letras minúsculas, números, punto, guion y guion bajo");
+        }
         Role role = requestedRole == null ? Role.WORKER : requestedRole;
         if (role == Role.ADMIN) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -106,6 +111,13 @@ public class InviteMembershipUseCase {
 
         if (existingUser.isPresent()) {
             user = existingUser.get();
+            if (normalizedUsername != null && !normalizedUsername.equals(user.getUsername())) {
+                if (userRepository.existsByUsernameIgnoreCaseAndIdNot(normalizedUsername, user.getId())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "El username ya está en uso");
+                }
+                user = userRepository.save(new User(user.getId(), user.getEmail(), user.getFullName(), normalizedUsername,
+                        user.getPasswordHash(), user.isActive(), user.getCreatedAt()));
+            }
             Optional<Membership> existingMembership =
                     membershipRepository.findByUserIdAndTenantId(user.getId(), tenantId);
             if (existingMembership.isPresent()) {
@@ -125,8 +137,11 @@ public class InviteMembershipUseCase {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "El nombre completo es obligatorio para invitar a un correo nuevo");
             }
+            if (normalizedUsername != null && userRepository.existsByUsernameIgnoreCase(normalizedUsername)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El username ya está en uso");
+            }
             user = userRepository.save(new User(
-                    UUID.randomUUID(), email, fullName.trim(),
+                    UUID.randomUUID(), email, fullName.trim(), normalizedUsername,
                     passwordEncoder.encode(randomUrlSafeToken()), false, now));
             membership = Membership.invited(
                     UUID.randomUUID(), user.getId(), tenantId, role, false, now);
@@ -159,7 +174,7 @@ public class InviteMembershipUseCase {
         }
 
         return new InvitationIssued(membership.getId(), user.getId(), email,
-                user.getFullName(), tenant.getName(), MembershipStatus.INVITED, expiresAt,
+                user.getFullName(), user.getUsername(), tenant.getName(), MembershipStatus.INVITED, expiresAt,
                 emailResult.isDelivered(), emailResult.error());
     }
 

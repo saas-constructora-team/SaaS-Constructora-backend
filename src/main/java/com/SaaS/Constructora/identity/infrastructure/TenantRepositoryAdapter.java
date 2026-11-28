@@ -25,16 +25,19 @@ class TenantRepositoryAdapter implements TenantRepository {
 
     @Override
     public Tenant save(Tenant tenant) {
-        TenantJpaEntity saved = repository.save(new TenantJpaEntity(
-                tenant.getId(), tenant.getName(), tenant.getSlug(), tenant.getTradeName(),
-                tenant.getTaxId(), tenant.getContactPhone(), tenant.getAddress(),
-                tenant.getCompanyEmail(), tenant.getCreatedAt()));
-        return toDomain(saved);
+        TenantJpaEntity entity = repository.findById(tenant.getId())
+                .orElseGet(() -> new TenantJpaEntity(
+                        tenant.getId(), tenant.getName(), tenant.getSlug(), tenant.getTradeName(),
+                        tenant.getTaxId(), tenant.getContactPhone(), tenant.getAddress(),
+                        tenant.getCompanyEmail(), tenant.getOwnerUserId(), tenant.getCreatedAt()));
+        entity.updateCompanyProfile(tenant.getName(), tenant.getTradeName(), tenant.getTaxId(),
+                tenant.getContactPhone(), tenant.getAddress(), tenant.getCompanyEmail());
+        return toDomain(repository.save(entity));
     }
 
     private static Tenant toDomain(TenantJpaEntity e) {
         return new Tenant(e.getId(), e.getName(), e.getSlug(), e.getTradeName(),
                 e.getTaxId(), e.getContactPhone(), e.getAddress(), e.getCompanyEmail(),
-                e.getCreatedAt());
+                e.getOwnerUserId(), e.getCreatedAt());
     }
 }

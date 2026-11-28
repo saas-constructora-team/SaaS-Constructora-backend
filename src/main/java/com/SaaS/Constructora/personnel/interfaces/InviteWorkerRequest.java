@@ -21,6 +21,10 @@ public record InviteWorkerRequest(
         @NotBlank(message = "El nombre completo es obligatorio")
         @Size(max = 150) String fullName,
 
+        @Size(min = 3, max = 30, message = "El username debe tener entre 3 y 30 caracteres")
+        @jakarta.validation.constraints.Pattern(regexp = "^[a-zA-Z0-9._-]+$", message = "El username solo puede contener letras, números, punto, guion y guion bajo")
+        String username,
+
         @NotNull(message = "El tipo de documento es obligatorio")
         DocumentType documentType,
 

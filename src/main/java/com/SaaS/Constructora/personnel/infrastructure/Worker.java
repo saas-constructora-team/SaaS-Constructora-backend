@@ -87,6 +87,9 @@ public class Worker {
 
     protected Worker() { } // requerido por JPA
 
+    @jakarta.persistence.Transient
+    private String username;
+
     public Worker(UUID tenantId, String fullName, DocumentType documentType, String documentNumber,
                   String phone, String email, String passwordHash, UUID userId,
                   String emergencyContactName, String emergencyContactPhone, String positionName,
@@ -106,6 +109,9 @@ public class Worker {
         this.projectId = projectId;
         this.active = true;
     }
+
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
     @PrePersist
     void onCreate() {

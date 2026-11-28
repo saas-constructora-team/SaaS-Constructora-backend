@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -197,6 +198,9 @@ class TaskIntegrationTest {
         mockMvc.perform(post("/api/projects/{projectId}/tasks", UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Tarea\"}"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/tasks/board"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -407,6 +411,258 @@ class TaskIntegrationTest {
                         .content("{\"title\":\"Campo ajeno\",\"areaId\":\"" + areaId + "\","
                                 + "\"areaDetails\":{\"entidad\":\"Notaría\"}}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void tareaSeCreaVinculadaAUnaEtapa() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto tareas etapa " + UUID.randomUUID());
+        UUID stageId = firstStageId(demo.token(), projectId);
+
+        String body = mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Tarea en etapa\",\"stageId\":\"" + stageId + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.stageId").value(stageId.toString()))
+                .andReturn().getResponse().getContentAsString();
+        UUID taskId = UUID.fromString(JsonPath.read(body, "$.id"));
+
+        mockMvc.perform(get("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(taskId.toString()))
+                .andExpect(jsonPath("$[0].stageId").value(stageId.toString()));
+    }
+
+    @Test
+    void noCreaTareaConEtapaDeOtroProyecto() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto etapa ajena " + UUID.randomUUID());
+        UUID otherProjectId = createProject(demo.token(), "Otro proyecto etapa " + UUID.randomUUID());
+        UUID foreignStageId = firstStageId(demo.token(), otherProjectId);
+
+        mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Etapa ajena\",\"stageId\":\"" + foreignStageId + "\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void noCreaTareaEnEtapaCerrada() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto etapa cerrada " + UUID.randomUUID());
+        UUID stageId = firstStageId(demo.token(), projectId);
+
+        mockMvc.perform(post("/api/projects/{projectId}/stages/{stageId}/close", projectId, stageId)
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Etapa cerrada\",\"stageId\":\"" + stageId + "\"}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void mueveUnaTareaEntreEtapasYAquiereSinEtapa() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto mover tarea " + UUID.randomUUID());
+        UUID firstStage = firstStageId(demo.token(), projectId);
+        UUID secondStage = stageIdAt(demo.token(), projectId, 1);
+
+        String body = mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Tarea a mover\",\"stageId\":\"" + firstStage + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID taskId = UUID.fromString(JsonPath.read(body, "$.id"));
+
+        mockMvc.perform(patch("/api/tasks/{taskId}/stage", taskId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stageId\":\"" + secondStage + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(taskId.toString()))
+                .andExpect(jsonPath("$.projectId").value(projectId.toString()))
+                .andExpect(jsonPath("$.stageId").value(secondStage.toString()));
+
+        mockMvc.perform(patch("/api/tasks/{taskId}/stage", taskId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stageId\":null}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stageId").doesNotExist());
+
+        mockMvc.perform(get("/api/tasks/board")
+                        .param("projectId", projectId.toString())
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tasks[0].id").value(taskId.toString()))
+                .andExpect(jsonPath("$.tasks[0].stageId").doesNotExist());
+    }
+
+    @Test
+    void noMueveLaTareaAUnaEtapaDeOtroProyecto() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto mover ajeno " + UUID.randomUUID());
+        UUID otherProjectId = createProject(demo.token(), "Otro proyecto mover " + UUID.randomUUID());
+        UUID foreignStageId = firstStageId(demo.token(), otherProjectId);
+
+        String body = mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Tarea con etapa propia\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID taskId = UUID.fromString(JsonPath.read(body, "$.id"));
+
+        mockMvc.perform(patch("/api/tasks/{taskId}/stage", taskId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stageId\":\"" + foreignStageId + "\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void noMueveLaTareaAUnaEtapaCerrada() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto mover cerrada " + UUID.randomUUID());
+        UUID stageId = stageIdAt(demo.token(), projectId, 1);
+        mockMvc.perform(post("/api/projects/{projectId}/stages/{stageId}/close", projectId, stageId)
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk());
+
+        String body = mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Tarea sin mover\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID taskId = UUID.fromString(JsonPath.read(body, "$.id"));
+
+        mockMvc.perform(patch("/api/tasks/{taskId}/stage", taskId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stageId\":\"" + stageId + "\"}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void eliminarEtapaDejaLaTareaSinEtapa() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto borrar etapa tarea " + UUID.randomUUID());
+        UUID stageId = firstStageId(demo.token(), projectId);
+
+        String body = mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Tarea con etapa\",\"stageId\":\"" + stageId + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID taskId = UUID.fromString(JsonPath.read(body, "$.id"));
+
+        mockMvc.perform(delete("/api/projects/{projectId}/stages/{stageId}", projectId, stageId)
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(taskId.toString()))
+                .andExpect(jsonPath("$[0].stageId").doesNotExist());
+    }
+
+    @Test
+    void tableroDevuelveEtapasYTareasDelProyecto() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto tablero " + UUID.randomUUID());
+        UUID stageId = firstStageId(demo.token(), projectId);
+        mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Tarea del tablero\",\"stageId\":\"" + stageId + "\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/tasks/board")
+                        .param("projectId", projectId.toString())
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stages", hasSize(6)))
+                .andExpect(jsonPath("$.stages[0].projectId").value(projectId.toString()))
+                .andExpect(jsonPath("$.tasks[0].projectId").value(projectId.toString()))
+                .andExpect(jsonPath("$.tasks[0].stageId").value(stageId.toString()))
+                .andExpect(jsonPath("$.tasks[0].status.name").value("Pendiente"))
+                .andExpect(jsonPath("$.truncated").value(false));
+    }
+
+    @Test
+    void tableroRespetaLaVisibilidadDelProyecto() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        Session worker = createWorkerSession(DEMO_TENANT, uniqueEmail("tablero"));
+        UUID visibleId = createProject(demo.token(), "Proyecto visible " + UUID.randomUUID());
+        UUID hiddenId = createProject(demo.token(), "Proyecto oculto " + UUID.randomUUID());
+        mockMvc.perform(post("/api/projects/{projectId}/tasks", visibleId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Tarea visible\"}"))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/projects/{projectId}/tasks", hiddenId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Tarea oculta\"}"))
+                .andExpect(status().isCreated());
+        assign(demo.token(), visibleId, worker.userId());
+
+        mockMvc.perform(get("/api/tasks/board")
+                        .header("Authorization", "Bearer " + worker.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tasks", hasSize(1)))
+                .andExpect(jsonPath("$.tasks[0].projectId").value(visibleId.toString()));
+
+        mockMvc.perform(get("/api/tasks/board")
+                        .param("projectId", hiddenId.toString())
+                        .header("Authorization", "Bearer " + worker.token()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void tableroAvisaCuandoRecortaPorElLimite() throws Exception {
+        Session demo = login("admin@demo.com", "Admin123!");
+        UUID projectId = createProject(demo.token(), "Proyecto límite tablero " + UUID.randomUUID());
+        mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Primera tarea\"}"))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                        .header("Authorization", "Bearer " + demo.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Segunda tarea\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/tasks/board")
+                        .param("projectId", projectId.toString())
+                        .param("limit", "1")
+                        .header("Authorization", "Bearer " + demo.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tasks", hasSize(1)))
+                .andExpect(jsonPath("$.truncated").value(true));
+    }
+
+    private UUID firstStageId(String token, UUID projectId) throws Exception {
+        return stageIdAt(token, projectId, 0);
+    }
+
+    private UUID stageIdAt(String token, UUID projectId, int index) throws Exception {
+        String body = mockMvc.perform(get("/api/projects/{projectId}/stages", projectId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return UUID.fromString(JsonPath.read(body, "$[" + index + "].id"));
     }
 
     private Session login(String email, String password) throws Exception {

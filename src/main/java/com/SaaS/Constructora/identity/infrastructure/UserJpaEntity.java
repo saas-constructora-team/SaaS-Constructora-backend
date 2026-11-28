@@ -17,6 +17,9 @@ class UserJpaEntity {
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
 
+    @Column(length = 30)
+    private String username;
+
     @Column(name = "password_hash", nullable = false, length = 100)
     private String passwordHash;
 
@@ -28,11 +31,12 @@ class UserJpaEntity {
 
     protected UserJpaEntity() { } // requerido por JPA
 
-    UserJpaEntity(UUID id, String email, String fullName,
+    UserJpaEntity(UUID id, String email, String fullName, String username,
                   String passwordHash, boolean active, LocalDateTime createdAt) {
         this.id = id;
         this.email = email;
         this.fullName = fullName;
+        this.username = username;
         this.passwordHash = passwordHash;
         this.active = active;
         this.createdAt = createdAt;
@@ -41,10 +45,13 @@ class UserJpaEntity {
     UUID getId() { return id; }
     String getEmail() { return email; }
     String getFullName() { return fullName; }
+    String getUsername() { return username; }
     String getPasswordHash() { return passwordHash; }
     boolean isActive() { return active; }
     LocalDateTime getCreatedAt() { return createdAt; }
 
+    void setFullName(String fullName) { this.fullName = fullName; }
+    void setUsername(String username) { this.username = username; }
     void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
     void setActive(boolean active) { this.active = active; }
 }

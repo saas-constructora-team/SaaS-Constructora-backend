@@ -32,6 +32,9 @@ class TenantJpaEntity {
     @Column(name = "company_email", length = 255)
     private String companyEmail;
 
+    @Column(name = "owner_user_id", nullable = false)
+    private UUID ownerUserId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -39,7 +42,7 @@ class TenantJpaEntity {
 
     TenantJpaEntity(UUID id, String name, String slug, String tradeName, String taxId,
                     String contactPhone, String address, String companyEmail,
-                    LocalDateTime createdAt) {
+                    UUID ownerUserId, LocalDateTime createdAt) {
         this.id = id;
         this.name = name;
         this.slug = slug;
@@ -48,6 +51,7 @@ class TenantJpaEntity {
         this.contactPhone = contactPhone;
         this.address = address;
         this.companyEmail = companyEmail;
+        this.ownerUserId = ownerUserId;
         this.createdAt = createdAt;
     }
 
@@ -59,5 +63,16 @@ class TenantJpaEntity {
     String getContactPhone() { return contactPhone; }
     String getAddress() { return address; }
     String getCompanyEmail() { return companyEmail; }
+    UUID getOwnerUserId() { return ownerUserId; }
     LocalDateTime getCreatedAt() { return createdAt; }
+
+    void updateCompanyProfile(String name, String tradeName, String taxId,
+                              String contactPhone, String address, String companyEmail) {
+        this.name = name;
+        this.tradeName = tradeName;
+        this.taxId = taxId;
+        this.contactPhone = contactPhone;
+        this.address = address;
+        this.companyEmail = companyEmail;
+    }
 }

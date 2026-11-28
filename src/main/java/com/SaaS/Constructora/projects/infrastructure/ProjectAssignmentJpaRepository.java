@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,10 +19,16 @@ interface ProjectAssignmentJpaRepository extends JpaRepository<ProjectAssignment
 
     List<ProjectAssignment> findByTenantIdAndUnassignedAtIsNull(UUID tenantId);
 
+    List<ProjectAssignment> findByTenantIdAndProjectIdInAndUnassignedAtIsNull(
+            UUID tenantId, Collection<UUID> projectIds);
+
     List<ProjectAssignment> findByTenantIdAndUserIdAndUnassignedAtIsNull(UUID tenantId, UUID userId);
 
     Optional<ProjectAssignment> findByTenantIdAndProjectIdAndUserIdAndUnassignedAtIsNull(
             UUID tenantId, UUID projectId, UUID userId);
+
+    Optional<ProjectAssignment> findByIdAndTenantIdAndProjectIdAndUnassignedAtIsNull(
+            UUID id, UUID tenantId, UUID projectId);
 
     boolean existsByTenantIdAndProjectIdAndUserIdAndUnassignedAtIsNull(
             UUID tenantId, UUID projectId, UUID userId);

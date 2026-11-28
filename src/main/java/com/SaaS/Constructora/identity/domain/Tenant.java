@@ -17,16 +17,23 @@ public class Tenant {
     private final String contactPhone;
     private final String address;
     private final String companyEmail;
+    private final UUID ownerUserId;
     private final LocalDateTime createdAt;
 
     /** Alta básica (p. ej. registro con Google, donde solo se conoce el nombre). */
     public Tenant(UUID id, String name, String slug, LocalDateTime createdAt) {
-        this(id, name, slug, null, null, null, null, null, createdAt);
+        this(id, name, slug, null, null, null, null, null, null, createdAt);
     }
 
     public Tenant(UUID id, String name, String slug, String tradeName, String taxId,
                   String contactPhone, String address, String companyEmail,
                   LocalDateTime createdAt) {
+        this(id, name, slug, tradeName, taxId, contactPhone, address, companyEmail, null, createdAt);
+    }
+
+    public Tenant(UUID id, String name, String slug, String tradeName, String taxId,
+                  String contactPhone, String address, String companyEmail,
+                  UUID ownerUserId, LocalDateTime createdAt) {
         this.id = id;
         this.name = name;
         this.slug = slug;
@@ -35,6 +42,7 @@ public class Tenant {
         this.contactPhone = contactPhone;
         this.address = address;
         this.companyEmail = companyEmail;
+        this.ownerUserId = ownerUserId;
         this.createdAt = createdAt;
     }
 
@@ -51,6 +59,16 @@ public class Tenant {
                 .replaceAll("(^-|-$)", "");
     }
 
+    public Tenant updateCompanyProfile(String name, String tradeName, String taxId,
+                                       String contactPhone, String address, String companyEmail) {
+        return new Tenant(id, name, slug, tradeName, taxId, contactPhone, address,
+                companyEmail, ownerUserId, createdAt);
+    }
+
+    public boolean isOwnedBy(UUID userId) {
+        return ownerUserId != null && ownerUserId.equals(userId);
+    }
+
     public UUID getId() { return id; }
     public String getName() { return name; }
     public String getSlug() { return slug; }
@@ -59,5 +77,6 @@ public class Tenant {
     public String getContactPhone() { return contactPhone; }
     public String getAddress() { return address; }
     public String getCompanyEmail() { return companyEmail; }
+    public UUID getOwnerUserId() { return ownerUserId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

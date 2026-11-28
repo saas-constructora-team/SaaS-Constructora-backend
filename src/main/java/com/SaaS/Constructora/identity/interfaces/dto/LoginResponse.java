@@ -10,10 +10,10 @@ public record LoginResponse(
     long expiresInSeconds,
     UserResponse user
 ) {
-    public record UserResponse(UUID id, UUID tenantId, String email, String fullName, String role) {
+    public record UserResponse(UUID id, UUID tenantId, String email, String fullName, String username, String role) {
         static UserResponse from(User u, Membership m) {
             return new UserResponse(u.getId(), m.getTenantId(), u.getEmail(),
-                    u.getFullName(), m.getRole().name());
+                    u.getFullName(), u.getUsername(), m.getRole().name());
         }
     }
 

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,6 +14,9 @@ public interface TaskStatusRepository extends JpaRepository<TaskStatus, UUID> {
 
     List<TaskStatus> findByTenantIdAndProjectIdOrderByStatusOrderAsc(
             UUID tenantId, UUID projectId);
+
+    List<TaskStatus> findByTenantIdAndProjectIdInOrderByStatusOrderAsc(
+            UUID tenantId, Collection<UUID> projectIds);
 
     Optional<TaskStatus> findByIdAndTenantIdAndProjectId(
             UUID id, UUID tenantId, UUID projectId);

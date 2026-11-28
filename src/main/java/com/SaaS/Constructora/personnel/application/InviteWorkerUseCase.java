@@ -8,6 +8,8 @@ import com.SaaS.Constructora.personnel.interfaces.InviteWorkerResponse;
 
 import com.SaaS.Constructora.identity.application.InvitationIssued;
 import com.SaaS.Constructora.identity.application.InviteMembershipUseCase;
+import com.SaaS.Constructora.identity.application.ports.UserRepository;
+import com.SaaS.Constructora.identity.domain.User;
 import com.SaaS.Constructora.identity.application.PersonnelPermissionService;
 import com.SaaS.Constructora.projects.application.ports.ProjectTenantPort;
 import org.springframework.http.HttpStatus;
@@ -33,17 +35,20 @@ public class InviteWorkerUseCase {
     private final ProjectTenantPort projectTenantPort;
     private final PersonnelPermissionService permissionService;
     private final InviteMembershipUseCase inviteMembershipUseCase;
+    private final UserRepository userRepository;
 
     public InviteWorkerUseCase(WorkerRepository repository,
                                WorkerPositionRepository positionRepository,
                                ProjectTenantPort projectTenantPort,
                                PersonnelPermissionService permissionService,
-                               InviteMembershipUseCase inviteMembershipUseCase) {
+                               InviteMembershipUseCase inviteMembershipUseCase,
+                               UserRepository userRepository) {
         this.repository = repository;
         this.positionRepository = positionRepository;
         this.projectTenantPort = projectTenantPort;
         this.permissionService = permissionService;
         this.inviteMembershipUseCase = inviteMembershipUseCase;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -55,9 +60,13 @@ public class InviteWorkerUseCase {
             projectTenantPort.ensureBelongsToTenant(request.projectId(), tenantId);
         }
         String positionName = resolvePositionName(tenantId, request.position());
+        String username = User.normalizeUsername(request.username());
+        if (username != null && userRepository.existsByUsernameIgnoreCase(username)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El username ya está en uso");
+        }
 
         InvitationIssued issued = inviteMembershipUseCase.invite(
-                tenantId, actorId, request.email(), request.fullName(), request.role());
+                tenantId, actorId, request.email(), request.fullName(), username, request.role());
 
         Optional<Worker> existing = repository
                 .findByTenantIdAndDocumentTypeAndDocumentNumber(
@@ -73,6 +82,7 @@ public class InviteWorkerUseCase {
                 worker.linkToUser(issued.userId());
                 worker = repository.save(worker);
             }
+            worker.setUsername(issued.username());
             return InviteWorkerResponse.from(worker, issued);
         }
 
@@ -90,7 +100,9 @@ public class InviteWorkerUseCase {
                 positionName,
                 request.projectId());
 
-        return InviteWorkerResponse.from(repository.save(worker), issued);
+        Worker saved = repository.save(worker);
+        saved.setUsername(issued.username());
+        return InviteWorkerResponse.from(saved, issued);
     }
 
     /**

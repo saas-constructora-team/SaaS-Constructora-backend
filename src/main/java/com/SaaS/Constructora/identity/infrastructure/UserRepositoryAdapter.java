@@ -56,11 +56,26 @@ class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
+    public boolean existsByUsernameIgnoreCase(String username) {
+        return username != null && repository.existsByUsernameIgnoreCase(username);
+    }
+
+    @Override
+    public boolean existsByUsernameIgnoreCaseAndIdNot(String username, UUID userId) {
+        return username != null && repository.existsByUsernameIgnoreCaseAndIdNot(username, userId);
+    }
+
+    @Override
     public User save(User user) {
-        UserJpaEntity saved = repository.save(new UserJpaEntity(
-                user.getId(), user.getEmail(), user.getFullName(),
-                user.getPasswordHash(), user.isActive(), user.getCreatedAt()));
-        return toDomain(saved);
+        UserJpaEntity entity = repository.findById(user.getId())
+                .orElseGet(() -> new UserJpaEntity(
+                        user.getId(), user.getEmail(), user.getFullName(), user.getUsername(),
+                        user.getPasswordHash(), user.isActive(), user.getCreatedAt()));
+        entity.setFullName(user.getFullName());
+        entity.setUsername(user.getUsername());
+        entity.setPasswordHash(user.getPasswordHash());
+        entity.setActive(user.isActive());
+        return toDomain(repository.save(entity));
     }
 
     @Override
@@ -81,12 +96,12 @@ class UserRepositoryAdapter implements UserRepository {
     }
 
     private static User toDomain(UserJpaEntity e) {
-        return new User(e.getId(), e.getEmail(), e.getFullName(),
+        return new User(e.getId(), e.getEmail(), e.getFullName(), e.getUsername(),
                 e.getPasswordHash(), e.isActive(), e.getCreatedAt());
     }
 
     private static UserSummary toSummary(ActiveUserProjection p) {
-        return new UserSummary(p.getId(), p.getEmail(), p.getFullName(), p.getRole(), p.isActive(),
+        return new UserSummary(p.getId(), p.getEmail(), p.getFullName(), p.getUsername(), p.getRole(), p.isActive(),
                 p.getRole().canCreatePersonnel() || p.getCanCreatePersonnel(),
                 p.getRole().canViewAssignmentCandidates() || p.getCanViewAssignmentCandidates(),
                 p.getRole().canCreateTasks() || p.getCanCreateTasks(),

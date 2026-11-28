@@ -59,14 +59,15 @@ public class RegisterTenantUseCase {
         }
 
         LocalDateTime now = LocalDateTime.now();
+        UUID adminId = UUID.randomUUID();
         Tenant tenant = tenantRepository.save(new Tenant(
                 UUID.randomUUID(), request.companyName().trim(), slug,
                 normalize(request.tradeName()), normalize(request.taxId()),
                 normalize(request.contactPhone()), normalize(request.address()),
-                normalize(request.companyEmail()), now));
+                normalize(request.companyEmail()), adminId, now));
 
         User admin = userRepository.save(new User(
-                UUID.randomUUID(), email, request.adminFullName().trim(),
+                adminId, email, request.adminFullName().trim(), null,
                 passwordEncoder.encode(request.adminPassword()), true, now));
 
         // Crear membresía ADMIN para el usuario en el tenant

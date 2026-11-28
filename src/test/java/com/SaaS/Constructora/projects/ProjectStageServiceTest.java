@@ -1,13 +1,16 @@
 package com.SaaS.Constructora.projects;
 import com.SaaS.Constructora.projects.application.ProjectService;
 import com.SaaS.Constructora.projects.application.ProjectStageService;
+import com.SaaS.Constructora.projects.domain.StageColor;
 import com.SaaS.Constructora.projects.infrastructure.ProjectStage;
 import com.SaaS.Constructora.projects.infrastructure.ProjectStageRepository;
 import com.SaaS.Constructora.projects.interfaces.CreateProjectStageRequest;
 import com.SaaS.Constructora.projects.interfaces.ProjectStageResponse;
 import com.SaaS.Constructora.projects.interfaces.UpdateProjectStageRequest;
+import com.SaaS.Constructora.projects.interfaces.UpdateStageColorsRequest;
 
 import com.SaaS.Constructora.identity.domain.Role;
+import com.SaaS.Constructora.shared.events.ProjectChanged;
 import com.SaaS.Constructora.shared.events.ProjectStageClosed;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -17,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -214,5 +219,90 @@ class ProjectStageServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
         assertEquals("Construcción", stage.getName());
+    }
+
+    @Test
+    void editaElColorYConservaElNombreYOrden() {
+        ProjectStage stage = new ProjectStage(tenantId, projectId, "Construcción", 5);
+        when(repository.findByIdAndTenantIdAndProjectId(stage.getId(), tenantId, projectId))
+                .thenReturn(Optional.of(stage));
+
+        ProjectStageResponse response = service.update(
+                tenantId, projectId, stage.getId(), userId, Role.ADMIN,
+                new UpdateProjectStageRequest("Obra gruesa", StageColor.TOSCA));
+
+        assertEquals(StageColor.TOSCA, response.color());
+        assertEquals("Obra gruesa", response.name());
+        assertEquals(5, response.order());
+
+        ArgumentCaptor<ProjectChanged> eventCaptor = ArgumentCaptor.forClass(ProjectChanged.class);
+        verify(events).publishEvent(eventCaptor.capture());
+        assertEquals(ProjectChanged.STAGE, eventCaptor.getValue().section());
+        assertEquals(projectId, eventCaptor.getValue().projectId());
+    }
+
+    @Test
+    void colorAusenteConservaElColorAnterior() {
+        ProjectStage stage = new ProjectStage(
+                tenantId, projectId, "Construcción", 5, StageColor.LAVENDER);
+        when(repository.findByIdAndTenantIdAndProjectId(stage.getId(), tenantId, projectId))
+                .thenReturn(Optional.of(stage));
+
+        ProjectStageResponse response = service.update(
+                tenantId, projectId, stage.getId(), userId, Role.ADMIN,
+                new UpdateProjectStageRequest("Obra gruesa"));
+
+        assertEquals(StageColor.LAVENDER, response.color());
+    }
+
+    @Test
+    void cambiaElColorDeVariasEtapasYPublicaUnAvisoPorProyecto() {
+        UUID otherProjectId = UUID.randomUUID();
+        ProjectStage first = new ProjectStage(tenantId, projectId, "Cimentación", 1);
+        ProjectStage second = new ProjectStage(tenantId, otherProjectId, "Cimentación", 1);
+        when(repository.findByIdAndTenantIdAndProjectId(first.getId(), tenantId, projectId))
+                .thenReturn(Optional.of(first));
+        when(repository.findByIdAndTenantIdAndProjectId(second.getId(), tenantId, otherProjectId))
+                .thenReturn(Optional.of(second));
+
+        service.updateColors(tenantId, userId, Role.ADMIN, new UpdateStageColorsRequest(List.of(
+                new UpdateStageColorsRequest.StageColorUpdate(
+                        projectId, first.getId(), StageColor.TOSCA),
+                new UpdateStageColorsRequest.StageColorUpdate(
+                        otherProjectId, second.getId(), StageColor.TOSCA))));
+
+        assertEquals(StageColor.TOSCA, first.getColor());
+        assertEquals(StageColor.TOSCA, second.getColor());
+        verify(projectService).ensureUserCanAccessProject(projectId, tenantId, userId, Role.ADMIN);
+        verify(projectService).ensureUserCanAccessProject(
+                otherProjectId, tenantId, userId, Role.ADMIN);
+
+        ArgumentCaptor<ProjectChanged> eventCaptor = ArgumentCaptor.forClass(ProjectChanged.class);
+        verify(events, times(2)).publishEvent(eventCaptor.capture());
+        assertTrue(eventCaptor.getAllValues().stream()
+                .allMatch(event -> ProjectChanged.STAGE.equals(event.section())));
+        assertEquals(Set.of(projectId, otherProjectId), eventCaptor.getAllValues().stream()
+                .map(ProjectChanged::projectId).collect(java.util.stream.Collectors.toSet()));
+    }
+
+    @Test
+    void noCambiaNingunColorSiUnProyectoNoEsAccesible() {
+        UUID otherProjectId = UUID.randomUUID();
+        ProjectStage stage = new ProjectStage(tenantId, projectId, "Cimentación", 1);
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado"))
+                .when(projectService).ensureUserCanAccessProject(
+                        otherProjectId, tenantId, userId, Role.MEMBER);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.updateColors(tenantId, userId, Role.MEMBER,
+                        new UpdateStageColorsRequest(List.of(
+                                new UpdateStageColorsRequest.StageColorUpdate(
+                                        projectId, stage.getId(), StageColor.TOSCA),
+                                new UpdateStageColorsRequest.StageColorUpdate(
+                                        otherProjectId, UUID.randomUUID(), StageColor.TOSCA)))));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        assertEquals(StageColor.SAGE, stage.getColor());
+        verifyNoInteractions(repository, events);
     }
 }

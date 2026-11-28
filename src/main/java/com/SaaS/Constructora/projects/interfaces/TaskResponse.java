@@ -21,7 +21,8 @@ public record TaskResponse(
         LocalDate fechaFinPrevista,
         AreaDetailsResponse areaDetails,
         UUID createdBy,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        UUID stageId
 ) {
     public record StatusResponse(UUID id, String name, String color, int order,
                                  boolean isDefault, boolean isSystem) { }
@@ -48,6 +49,7 @@ public record TaskResponse(
                         ? null
                         : AreaDetailsResponse.from(task.getDetallesArea()),
                 task.getCreatedBy(),
-                task.getCreatedAt());
+                task.getCreatedAt(),
+                task.getStageId());
     }
 }

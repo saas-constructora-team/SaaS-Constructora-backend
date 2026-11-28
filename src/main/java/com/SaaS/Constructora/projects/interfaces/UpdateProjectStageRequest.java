@@ -1,10 +1,14 @@
 package com.SaaS.Constructora.projects.interfaces;
 
+import com.SaaS.Constructora.projects.domain.StageColor;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record UpdateProjectStageRequest(
         @NotBlank(message = "El nombre de la etapa es obligatorio")
         @Size(max = 150, message = "El nombre de la etapa no puede superar 150 caracteres")
-        String name
-) { }
+        String name,
+        StageColor color
+) {
+    public UpdateProjectStageRequest(String name) { this(name, null); }
+}

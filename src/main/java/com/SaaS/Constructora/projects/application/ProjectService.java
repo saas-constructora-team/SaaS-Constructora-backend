@@ -116,6 +116,12 @@ public class ProjectService implements ProjectTenantPort {
                 .toList();
     }
 
+    /** IDs de los proyectos visibles, para consultas agregadas sin cargar entidades. */
+    @Transactional(readOnly = true)
+    public List<UUID> listVisibleProjectIds(UUID tenantId, UUID userId, Role role) {
+        return repository.findVisibleProjectIds(tenantId, userId, role.canViewAllProjects());
+    }
+
     /** Búsqueda paginada con filtros opcionales, restringida al tenant y a la visibilidad. */
     @Transactional(readOnly = true)
     public Page<ProjectResponse> search(UUID tenantId, UUID userId, Role role, String query,

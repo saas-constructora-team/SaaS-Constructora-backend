@@ -1,6 +1,7 @@
 package com.SaaS.Constructora.realtime.infrastructure;
 
 import com.SaaS.Constructora.shared.events.ProjectChanged;
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -10,6 +11,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Suscripciones SSE en memoria, agrupadas por tenant. Solo reenvía metadatos
@@ -19,11 +24,30 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @Component
 public class RealtimeSubscriptionRegistry {
 
+    /** Los streams tienen un límite: si el cliente no se va, el canal se libera y reconecta. */
+    private static final long TIMEOUT_MS = 60_000L;
+    private static final long HEARTBEAT_MS = 25_000L;
+
     private final Map<UUID, Set<Subscription>> byTenant = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService heartbeats = Executors.newSingleThreadScheduledExecutor(task -> {
+        Thread thread = new Thread(task, "sse-heartbeat");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     public SseEmitter subscribe(UUID tenantId, UUID projectId) {
-        SseEmitter emitter = new SseEmitter(0L); // sin expiración: el cliente reconecta si se corta
+        SseEmitter emitter = new SseEmitter(TIMEOUT_MS);
         Subscription subscription = subscribe(tenantId, projectId, emitter);
+
+        ScheduledFuture<?> heartbeat = heartbeats.scheduleAtFixedRate(() -> {
+            try {
+                subscription.emitter().send(SseEmitter.event().comment("ping"));
+            } catch (IOException | IllegalStateException exception) {
+                remove(tenantId, subscription);
+            }
+        }, HEARTBEAT_MS, HEARTBEAT_MS, TimeUnit.MILLISECONDS);
+        subscription.setHeartbeat(heartbeat);
+
         try {
             emitter.send(SseEmitter.event()
                     .name("ready")
@@ -74,6 +98,7 @@ public class RealtimeSubscriptionRegistry {
     }
 
     private void remove(UUID tenantId, Subscription subscription) {
+        subscription.cancelHeartbeat();
         Set<Subscription> subscriptions = byTenant.get(tenantId);
         if (subscriptions == null) {
             return;
@@ -84,5 +109,39 @@ public class RealtimeSubscriptionRegistry {
         }
     }
 
-    private record Subscription(UUID projectId, SseEmitter emitter) { }
+    @PreDestroy
+    void stopHeartbeats() {
+        heartbeats.shutdownNow();
+    }
+
+    private static final class Subscription {
+
+        private final UUID projectId;
+        private final SseEmitter emitter;
+        private ScheduledFuture<?> heartbeat;
+
+        private Subscription(UUID projectId, SseEmitter emitter) {
+            this.projectId = projectId;
+            this.emitter = emitter;
+        }
+
+        private UUID projectId() {
+            return projectId;
+        }
+
+        private SseEmitter emitter() {
+            return emitter;
+        }
+
+        private void setHeartbeat(ScheduledFuture<?> heartbeat) {
+            this.heartbeat = heartbeat;
+        }
+
+        private void cancelHeartbeat() {
+            if (heartbeat != null) {
+                heartbeat.cancel(false);
+                heartbeat = null;
+            }
+        }
+    }
 }

@@ -17,7 +17,7 @@ interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
 
     /** Usuarios con membresía activa en el tenant, en una sola consulta. */
     @Query("""
-            select u.id as id, u.email as email, u.fullName as fullName,
+            select u.id as id, u.email as email, u.fullName as fullName, u.username as username,
                    m.role as role, u.active as active,
                    m.canCreatePersonnel as canCreatePersonnel,
                    m.canViewAssignmentCandidates as canViewAssignmentCandidates,
@@ -32,7 +32,7 @@ interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
 
     /** Same projection limited to the ids supplied by the caller. */
     @Query("""
-            select u.id as id, u.email as email, u.fullName as fullName,
+            select u.id as id, u.email as email, u.fullName as fullName, u.username as username,
                    m.role as role, u.active as active,
                    m.canCreatePersonnel as canCreatePersonnel,
                    m.canViewAssignmentCandidates as canViewAssignmentCandidates,
@@ -46,4 +46,8 @@ interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
     List<ActiveUserProjection> findActiveByTenantIdAndUserIdIn(
             @Param("tenantId") UUID tenantId, @Param("status") MembershipStatus status,
             @Param("userIds") List<UUID> userIds);
+
+    boolean existsByUsernameIgnoreCase(String username);
+
+    boolean existsByUsernameIgnoreCaseAndIdNot(String username, UUID id);
 }

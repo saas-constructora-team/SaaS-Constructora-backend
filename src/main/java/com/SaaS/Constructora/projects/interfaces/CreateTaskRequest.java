@@ -22,14 +22,24 @@ public record CreateTaskRequest(
         LocalDate fechaFinPrevista,
 
         @Valid
-        AreaDetailsRequest areaDetails
+        AreaDetailsRequest areaDetails,
+
+        UUID stageId
 ) {
     public CreateTaskRequest(String title, String description) {
-        this(title, description, null, null, null, null, null, null);
+        this(title, description, null, null, null, null, null, null, null);
     }
 
     public CreateTaskRequest(String title, String description, UUID statusId, UUID areaId,
                              UUID assigneeUserId, UUID validatorUserId) {
-        this(title, description, statusId, areaId, assigneeUserId, validatorUserId, null, null);
+        this(title, description, statusId, areaId, assigneeUserId, validatorUserId,
+                null, null, null);
+    }
+
+    public CreateTaskRequest(String title, String description, UUID statusId, UUID areaId,
+                             UUID assigneeUserId, UUID validatorUserId,
+                             LocalDate fechaFinPrevista, AreaDetailsRequest areaDetails) {
+        this(title, description, statusId, areaId, assigneeUserId, validatorUserId,
+                fechaFinPrevista, areaDetails, null);
     }
 }

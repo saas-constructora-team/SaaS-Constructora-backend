@@ -7,6 +7,7 @@ import java.util.UUID;
 public record WorkerResponse(
         UUID id,
         String fullName,
+        String username,
         String documentType,
         String documentNumber,
         String phone,
@@ -22,6 +23,7 @@ public record WorkerResponse(
         return new WorkerResponse(
                 worker.getId(),
                 worker.getFullName(),
+                worker.getUsername(),
                 worker.getDocumentType().name(),
                 worker.getDocumentNumber(),
                 worker.getPhone(),
